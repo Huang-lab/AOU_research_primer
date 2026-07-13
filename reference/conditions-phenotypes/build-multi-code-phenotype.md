@@ -145,6 +145,10 @@ print(f"Controls: {(cohort_df['hypertension'] == 0).sum():,}")
 print(f"Prevalence: {cohort_df['hypertension'].mean():.3%}")
 ```
 
+> **Pitfall — prevalence inflated by high-level parent concepts.** If your code list includes a broad ancestor concept (e.g., "Hypertensive disorder" 316866), it may map to dozens of descendant conditions you did not intend to capture. The prevalence will be silently inflated because your phenotype is broader than you think. Inspect the descendant tree with `concept_ancestor` to verify what each code in your list actually covers.
+
+> **Pitfall — prevalence deflated by invalid or non-standard concept IDs.** Concept IDs from published algorithms or older CDR versions may not exist in the current CDR vocabulary, or may be non-standard (`standard_concept != 'S'`). These codes silently match zero records, undercounting your phenotype. Run the Step 1 validation query and check `standard_concept = 'S'` in the `concept` table for any codes with zero participants.
+
 ---
 
 ## Variations
@@ -237,8 +241,6 @@ icd_cases_df = client.query(icd_query).to_dataframe()
 
 | Symptom | Cause |
 |---|---|
-| Prevalence is unexpectedly high | Your code list may include a high-level parent concept that maps to many conditions. Inspect the descendant tree with `concept_ancestor`. |
-| Prevalence is unexpectedly low or zero | Concept IDs may not exist in the current CDR vocabulary version, or you may be using non-standard concept IDs. Check `standard_concept = 'S'` in the `concept` table. |
 | `concept_ancestor` join makes query very slow | The `concept_ancestor` table has hundreds of millions of rows. Filter it in a CTE or subquery rather than joining the full table. |
 | Duplicate participants after joining multiple code sets | Use `DISTINCT person_id` at the final step. Multiple condition records per person for the same concept are expected. |
 

@@ -136,6 +136,8 @@ print(f"Carrier OR: {or_est:.3f} "
 print(f"P-value: {p_value:.2e}")
 ```
 
+> **Pitfall — extremely wide confidence intervals (e.g., 0.01 to 100) indicate quasi-separation.** The model converges without error, but the odds ratio is unreliable because there are too few carriers in one or both outcome groups for stable maximum-likelihood estimation. Use Firth's penalized logistic regression (see Variation below), or aggregate variants (e.g., any P/LP variant in the gene panel) to increase the effective carrier count.
+
 > **Pitfall: including both self-reported race AND PCs as covariates.** Self-reported race/ethnicity and genetic ancestry PCs are collinear -- PCs capture the same ancestry variation that race categories approximate, plus continuous admixture that race categories miss. Including both inflates standard errors (due to multicollinearity), can cause model instability, and does not improve confounding control. Use PCs alone for genetic association analyses. If you need race for descriptive stratification, do that in a separate analysis.
 
 ```python
@@ -246,7 +248,6 @@ if p_interaction < 0.05:
 |---|---|
 | `PerfectSeparationError` or `PerfectSeparationWarning` | A covariate perfectly predicts the outcome. Usually caused by very low carrier counts. Use Firth's method (see Variation above). |
 | `LinAlgError: Singular matrix` | Perfect multicollinearity among covariates. Check for duplicate columns or both race and PCs included. |
-| Model converges but carrier OR confidence interval spans 0.01 to 100 | Too few carriers for stable estimation. Report the Firth-penalized OR or aggregate variants (e.g., any P/LP variant in the gene panel). |
 | `ConvergenceWarning: Maximum number of iterations reached` | Increase `maxiter`: `model.fit(maxiter=1000, disp=False)`. If still fails, check for separation. |
 
 ## Cost note
@@ -255,6 +256,7 @@ This page is mostly Python/statsmodels. The only BigQuery cost is extracting anc
 
 ## See also
 
+- [Compute genetic ancestry principal components](../demographics-ancestry/compute-ancestry-pcs.md) -- extract the ancestry PCs used as covariates in this regression
 - [Query carrier status for a gene panel](../genomics/query-carrier-status.md) -- generate the `is_carrier` variable
 - [Build a SHAP-ready feature matrix](build-shap-feature-matrix.md) -- alternative modeling approach for the same features
 - [Discover genomics table schemas](../genomics/discover-genomics-tables.md) -- find the correct PC column names in your CDR version

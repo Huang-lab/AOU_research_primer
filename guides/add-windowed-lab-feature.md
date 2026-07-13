@@ -57,7 +57,7 @@ Step 7  Audit for temporal leakage
 
 ## Step 1: Identify the LOINC Code and Find Its concept_id
 
-**Reference:** [query-lab-measurements](../references/query-lab-measurements.md)
+**Reference:** [query-lab-measurements](../reference/labs-measurements/query-lab-measurements.md)
 (concept lookup section)
 
 Before querying measurements, you need the OMOP `measurement_concept_id` that
@@ -94,8 +94,8 @@ name matches your intent before proceeding.
 
 ## Step 2: Query Measurements Within the Pre-Index Window
 
-**Reference:** [apply-index-date-window](../references/apply-index-date-window.md)
-and [query-lab-measurements](../references/query-lab-measurements.md)
+**Reference:** [apply-index-date-window](../reference/temporal-windowing/apply-index-date-window.md)
+and [query-lab-measurements](../reference/labs-measurements/query-lab-measurements.md)
 
 This is where temporal windowing and measurement extraction combine. The query
 must join the measurement table to your cohort on `person_id` and filter by date
@@ -137,7 +137,7 @@ because the clinician already suspected the condition). Using `<` rather than
 
 ## Step 3: Handle Unit Normalization
 
-**Reference:** [query-lab-measurements](../references/query-lab-measurements.md)
+**Reference:** [query-lab-measurements](../reference/labs-measurements/query-lab-measurements.md)
 (unit Pitfall)
 
 Lab values in the OMOP CDR can be recorded in different units for the same test.
@@ -181,7 +181,7 @@ valid measurements.
 
 ## Step 4: Apply Plausibility Bounds
 
-**Reference:** [query-lab-measurements](../references/query-lab-measurements.md)
+**Reference:** [query-lab-measurements](../reference/labs-measurements/query-lab-measurements.md)
 (outlier Pitfall)
 
 Lab databases contain implausible values: data entry errors, instrument
@@ -301,7 +301,7 @@ symptoms (i.e., informative missingness).
 
 ## Step 7: Audit for Temporal Leakage
 
-**Reference:** [audit-temporal-leakage](../references/audit-temporal-leakage.md)
+**Reference:** [audit-temporal-leakage](../reference/temporal-windowing/audit-temporal-leakage.md)
 
 This step is not optional. It is the verification that Steps 2-6 actually
 respected the temporal boundary. The audit checks that no measurement date in
@@ -384,7 +384,7 @@ for loinc, name, window, lo, hi in lab_specs:
 ## What Comes Next
 
 - If building a feature matrix for regression or machine learning, see
-  [build-shap-feature-matrix](../references/build-shap-feature-matrix.md) for
+  [build-shap-feature-matrix](../reference/statistical-modeling/build-shap-feature-matrix.md) for
   encoding and scaling guidance
 - If proceeding to statistical analysis, see
   [case-control-to-fdr-results](./case-control-to-fdr-results.md)

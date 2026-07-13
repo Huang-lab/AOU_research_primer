@@ -82,7 +82,7 @@ WHERE v.gene_symbol IN ('BRCA1', 'BRCA2', 'PALB2', 'ATM', 'CHEK2')
 
 ## Step 2: Dry-Run the Query
 
-**Reference:** [dry-run-query](../references/dry-run-query.md)
+**Reference:** [dry-run-query](../reference/cost-awareness/dry-run-query.md)
 
 A dry-run validates the query syntax and estimates the bytes that will be
 scanned, without actually executing the query or incurring any cost.
@@ -254,7 +254,7 @@ print(f"Optimized cost estimate: ${new_estimate:.2f} "
 
 ## Step 5: Set a Cost Cap
 
-**Reference:** [cap-query-cost](../references/cap-query-cost.md)
+**Reference:** [cap-query-cost](../reference/cost-awareness/cap-query-cost.md)
 
 Even after a dry-run, set a cost cap as a safety net. The cap prevents the query
 from scanning more than a specified number of bytes. If the query would exceed

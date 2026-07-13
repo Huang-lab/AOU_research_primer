@@ -133,6 +133,8 @@ def assert_no_temporal_leakage(
 assert_no_temporal_leakage(events_df, feature_matrix)
 ```
 
+> **Pitfall — a passing date audit does not rule out concept-hierarchy leakage.** If your model AUC is suspiciously high (>0.95) despite clean temporal boundaries, leakage may be through the concept hierarchy rather than dates. A feature concept that is a descendant (or ancestor) of the target condition concept encodes the outcome directly. For example, if the target is "Type 2 diabetes" and a feature includes "diabetic nephropathy" (a descendant), the feature is definitionally linked to the label. Check whether any feature concept is in the `concept_ancestor` tree of the target condition.
+
 ### Step 5: SQL-level audit (run before extracting features)
 
 If you want to catch leakage at the BigQuery level before pulling data into pandas:
@@ -243,7 +245,6 @@ for table, date_col in event_tables.items():
 | Symptom | Cause |
 |---|---|
 | Assertion fires on every participant | The feature query likely used `<=` instead of `<` for the boundary. Fix the extraction query and rebuild. |
-| Audit passes but model AUC is suspiciously high (>0.95) | Leakage may be through concept hierarchy, not dates. Check whether any feature concept is a descendant of the target condition concept. |
 | `merge` produces more rows than expected | Duplicate `person_id` in `index_dates` (multiple observation periods). Deduplicate to one index date per person before auditing. |
 
 ## Cost note

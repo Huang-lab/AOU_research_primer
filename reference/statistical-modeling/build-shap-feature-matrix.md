@@ -231,12 +231,13 @@ shap_values = explainer.shap_values(X_test)
 shap.summary_plot(shap_values, X_test, max_display=20)
 ```
 
+> **Pitfall — one feature dominating the SHAP summary plot usually indicates target leakage.** If a single feature absorbs nearly all SHAP importance, it is likely a proxy for the label (e.g., a cancer-staging lab included in a cancer-prediction model). Test by removing the dominant feature and retraining: if AUC drops dramatically, the feature was doing all the work and your other features are uninformative. If AUC barely changes, the feature was redundant. Either way, investigate the clinical relationship between the dominant feature and the target before publishing results.
+
 ## Troubleshooting
 
 | Symptom | Cause |
 |---|---|
 | `ValueError: Input contains NaN` from scikit-learn | Scikit-learn models do not accept NaN. Impute missing values or switch to XGBoost/LightGBM. |
-| SHAP summary plot shows one feature dominating everything | Likely target leakage -- the dominant feature is a proxy for the label. Check whether removing it drops AUC significantly. |
 | `MemoryError` during pivot | Too many unique concept IDs for a dense pivot. Use sparse format or filter to the top N most frequent concepts. |
 | Feature matrix has more rows than the cohort | A merge introduced duplicates (e.g., multiple observation periods per person). Deduplicate to one row per `person_id` before merging. |
 

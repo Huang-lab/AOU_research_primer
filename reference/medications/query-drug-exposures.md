@@ -91,6 +91,8 @@ print(ingredient_df.to_string(index=False))
 # metformin ingredient concept_id = 1503297
 ```
 
+> **Pitfall — querying a single brand or dose form silently undercounts exposures.** If your concept is a Clinical Drug (e.g., "metformin 500 MG Oral Tablet") or Branded Drug (e.g., "Glucophage") rather than an Ingredient, the `concept_ancestor` join captures only descendants of that specific formulation. Participants on other dose forms, generics, or combination products are silently missing. Always verify that your starting concept has `concept_class_id = 'Ingredient'` before querying.
+
 ### Step 2: Query by ingredient using `concept_ancestor`
 
 This captures every formulation, dose, brand, and generic under the ingredient.
@@ -316,7 +318,6 @@ concurrent_df = client.query(concurrent_query).to_dataframe()
 | Symptom | Cause |
 |---|---|
 | Zero results when querying by ingredient concept_id directly | Records are stored at the Clinical Drug or Branded Drug level, not the Ingredient level. Use `concept_ancestor` to capture all descendants. |
-| Far fewer participants than expected for a common drug | You may be querying a single brand or dose form. Verify your concept is an Ingredient (`concept_class_id = 'Ingredient'`) and use `concept_ancestor`. |
 | `concept_ancestor` join returns unexpected drugs | A combination product (e.g., metformin/sitagliptin) has multiple ingredient ancestors. If you query metformin, you will also capture combo products. This is usually correct but verify. |
 | Query is very slow | The `drug_exposure` table is large. Always filter by `concept_ancestor` in a CTE or subquery rather than scanning the full table. Add a cohort `person_id` filter when possible. |
 

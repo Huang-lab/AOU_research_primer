@@ -82,6 +82,8 @@ print(plp_variants["clinical_significance"].value_counts())
 
 > **Pitfall: exact-match filtering on `clinical_significance`.** If you write `WHERE clinical_significance = 'Pathogenic'`, you will miss every compound classification: `"Pathogenic/Likely pathogenic"`, `"Pathogenic, risk factor"`, `"Likely pathogenic"`, and others. ClinVar uses slash-separated and comma-separated compound strings. Use `LIKE '%Pathogenic%'` or parse the string. Note that `LIKE '%Pathogenic%'` will also match `"Conflicting classifications of pathogenicity"` -- you may want to exclude that explicitly (see Step 3).
 
+> **Pitfall — `LIKE '%Pathogenic%'` silently includes "Conflicting classifications of pathogenicity".** This inflates your P/LP carrier count by including variants where submissions disagree on pathogenicity. These are not definitive P/LP calls. Add `AND va.clinical_significance NOT LIKE '%Conflicting%'` to exclude them (see Step 3).
+
 ### Step 3: Exclude conflicting classifications
 
 The `LIKE '%Pathogenic%'` pattern matches "Conflicting classifications of pathogenicity", which is not a definitive P/LP call. Exclude it:
@@ -216,7 +218,6 @@ AND NOT REGEXP_CONTAINS(
 | Symptom | Cause |
 |---|---|
 | `LIKE '%Pathogenic%'` returns no rows | Column may be NULL for most variants (only ClinVar-annotated variants have a value), or the column name may differ in your CDR version. Check with `INFORMATION_SCHEMA`. |
-| Carrier count for P/LP is higher than expected | `LIKE '%Pathogenic%'` matches "Conflicting classifications of pathogenicity". Add the `NOT LIKE '%Conflicting%'` exclusion. |
 | `Unrecognized name: clinical_significance` | Column name differs in this CDR release. Run the schema discovery query from [Discover genomics table schemas](discover-genomics-tables.md). |
 
 ## Cost note

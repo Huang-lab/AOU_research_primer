@@ -58,7 +58,7 @@ Step 12 Merge all features into analysis-ready dataframe
 
 ## Step 1: Define Cases by Condition
 
-**Reference:** [define-case-cohort-by-condition](../references/define-case-cohort-by-condition.md)
+**Reference:** [define-case-cohort-by-condition](../reference/cohort-definition/define-case-cohort-by-condition.md)
 
 Identify participants with at least one record of the study condition. The
 Reference page covers concept set construction, descendant expansion, and the
@@ -82,7 +82,7 @@ Every downstream step depends on this set.
 
 ## Step 2: Set Index Dates for Cases
 
-**Reference:** [apply-index-date-window](../references/apply-index-date-window.md)
+**Reference:** [apply-index-date-window](../reference/temporal-windowing/apply-index-date-window.md)
 (index date computation section)
 
 The index date anchors all temporal reasoning. For a predisposition study, use
@@ -107,7 +107,7 @@ date -- without it you cannot determine whether a confounding diagnosis came
 
 ## Step 3: Exclude Participants with Prior Confounding Condition
 
-**Reference:** [exclude-by-condition-history](../references/exclude-by-condition-history.md)
+**Reference:** [exclude-by-condition-history](../reference/cohort-definition/exclude-by-condition-history.md)
 
 For a breast cancer study, exclude participants with prior ovarian cancer (shared
 genetic risk factors make attribution ambiguous):
@@ -135,7 +135,7 @@ building controls.
 
 ## Step 4: Build Age/Sex-Matched Controls
 
-**Reference:** [build-matched-controls](../references/build-matched-controls.md)
+**Reference:** [build-matched-controls](../reference/cohort-definition/build-matched-controls.md)
 
 Controls are participants who never had the study condition, matched to cases on
 age and sex. The Reference page covers the matching algorithm, caliper selection,
@@ -196,7 +196,7 @@ print(f"Combined cohort: {len(cohort_df)}")
 
 ## Step 6: Filter by Minimum Observation Period
 
-**Reference:** [filter-by-observation-period](../references/filter-by-observation-period.md)
+**Reference:** [filter-by-observation-period](../reference/data-quality/filter-by-observation-period.md)
 
 Require minimum observation time before index date to ensure that absent records
 reflect genuine absence, not missing data.
@@ -223,7 +223,7 @@ cohort_df = cohort_df[cohort_df["person_id"].isin(obs_eligible["person_id"])]
 
 ## Step 7: Extract Demographics
 
-**Reference:** [extract-demographic-features](../references/extract-demographic-features.md)
+**Reference:** [extract-demographic-features](../reference/demographics-ancestry/extract-demographic-features.md)
 
 Pull age, sex at birth, and race/ethnicity. For large cohorts, use a temp table
 instead of an IN-list (see Reference page).
@@ -249,7 +249,7 @@ finalized to avoid re-running it if the cohort changes.
 
 ## Step 8: Pull Ancestry Principal Components
 
-**Reference:** [compute-ancestry-pcs](../references/compute-ancestry-pcs.md)
+**Reference:** [compute-ancestry-pcs](../reference/demographics-ancestry/compute-ancestry-pcs.md)
 
 Ancestry PCs are essential confounders in any genetic association. The AoU
 genomic data includes pre-computed PCs (see Reference for exact table path).
@@ -274,7 +274,7 @@ pcs_df = client.query(ancestry_sql).to_dataframe()
 
 ## Step 9: Query Carrier Status for Gene Panel
 
-**Reference:** [query-carrier-status](../references/query-carrier-status.md)
+**Reference:** [query-carrier-status](../reference/genomics/query-carrier-status.md)
 
 The core genomic query. The Reference page covers variant table structure, gene
 symbol filtering, and consequence filtering.
@@ -296,7 +296,7 @@ entirely. The zero-fill happens in Step 11.
 
 ## Step 10: Filter to ClinVar P/LP Variants (Conditional)
 
-**Reference:** [filter-clinvar-plp](../references/filter-clinvar-plp.md)
+**Reference:** [filter-clinvar-plp](../reference/genomics/filter-clinvar-plp.md)
 
 If the study is focused on clinically actionable risk (as opposed to discovery),
 restrict to variants classified as Pathogenic or Likely Pathogenic in ClinVar.
@@ -345,7 +345,7 @@ cohort_df[carrier_cols] = cohort_df[carrier_cols].fillna(0).astype(int)
 ```
 
 > **Pitfall: Carrier-status result is carriers-only.**
-> See the [query-carrier-status](../references/query-carrier-status.md) Pitfall.
+> See the [query-carrier-status](../reference/genomics/query-carrier-status.md) Pitfall.
 > If you forget `how="left"` or `fillna(0)`, downstream regression will either
 > fail (NaN values) or silently exclude non-carriers.
 
@@ -381,7 +381,7 @@ The output is ready for [case-control-to-fdr-results](./case-control-to-fdr-resu
    extraction.
 
 3. **Carrier zero-fill at the merge** -- Step 9 returns carriers only (see the
-   [query-carrier-status](../references/query-carrier-status.md) Pitfall). The
+   [query-carrier-status](../reference/genomics/query-carrier-status.md) Pitfall). The
    `how="left"` and `fillna(0)` in Step 11 are structural requirements, not
    optional cleanup.
 

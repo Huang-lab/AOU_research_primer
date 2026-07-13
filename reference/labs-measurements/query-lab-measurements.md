@@ -300,3 +300,5 @@ The `measurement` table is the largest table in the AoU CDR (hundreds of million
 - [query-condition-occurrence.md](../conditions-phenotypes/query-condition-occurrence.md) -- Pairing lab results with condition diagnoses
 - [query-drug-exposures.md](../medications/query-drug-exposures.md) -- Linking medication exposures to lab trajectories
 - [extract-demographic-features.md](../demographics-ancestry/extract-demographic-features.md) -- Adding demographics to lab-based cohorts
+- [apply-index-date-window.md](../temporal-windowing/apply-index-date-window.md) -- Windowing lab values relative to an index date to prevent temporal leakage
+- [audit-temporal-leakage.md](../temporal-windowing/audit-temporal-leakage.md) -- Verifying that windowed lab features do not include post-index data

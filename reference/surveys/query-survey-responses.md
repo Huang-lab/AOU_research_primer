@@ -226,6 +226,6 @@ The `observation` table is one of the largest tables in the CDR (hundreds of mil
 
 ## See also
 
-- [Query condition occurrence](../conditions/query-condition-occurrence.md) -- for EHR-derived diagnoses as opposed to self-reported survey conditions
+- [Query condition occurrence](../conditions-phenotypes/query-condition-occurrence.md) -- for EHR-derived diagnoses as opposed to self-reported survey conditions
 - [Distinguish EHR from survey data sources](../data-quality/distinguish-ehr-survey-sources.md) -- for separating survey-reported conditions from EHR diagnoses
 - [Filter by observation period](../data-quality/filter-by-observation-period.md) -- for ensuring sufficient data coverage before analysis

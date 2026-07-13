@@ -122,6 +122,13 @@ between steps.
 carrier, P/LP, FDR, dry run, OMOP CDM, concept_id, and more. Linked from
 every page that uses these terms.
 
+## Pitfall Index
+
+[Pitfall Index](pitfall-index.md) — every Pitfall callout from all 23
+Reference pages, grouped by failure mode (missing denominator, temporal
+leakage, ancestry confounding, vocabulary errors, unit/encoding errors,
+provenance mixing, cost traps). Use as a pre-submission checklist.
+
 ## Template
 
 [Reference page template](TEMPLATE.md) — the fixed structure every

@@ -63,6 +63,8 @@ print(f"Unique carriers: {carriers_df['person_id'].nunique():,}")
 
 > **Pitfall: the result returns CARRIERS ONLY.** Non-carriers are completely absent from the output -- they do not appear as rows with zero variants. If you compute a carrier rate as `len(carriers_df) / len(carriers_df)`, you get 100%. Any rate, odds ratio, or enrichment calculated on the raw result has a missing denominator and is silently wrong. You must left-join back to your full cohort and fill missing values with zero.
 
+> **Pitfall — counting variants instead of carriers inflates carrier counts.** If you use `COUNT(*)` or `len(carriers_df)` to count carriers, you are counting variant rows, not distinct people. A participant carrying three variants in BRCA1 contributes three rows. Use `COUNT(DISTINCT person_id)` in SQL or `carriers_df['person_id'].nunique()` in pandas to get the true carrier count.
+
 ### Step 2: Left-join to full cohort and fill non-carriers
 
 ```python
@@ -178,8 +180,6 @@ WHERE g.gene_symbol IN UNNEST(@genes)
 | Query returns 0 rows | (1) Gene symbol not in `cb_variant_attribute_genes` -- check spelling and case. (2) Join key mismatch across CDR versions -- run `INFORMATION_SCHEMA` query to verify column names. |
 | `BadRequest: Unrecognized name: vid` | The CDR version uses a different column name for the variant identifier. See [Discover genomics table schemas](discover-genomics-tables.md). |
 | Query runs for >10 minutes | `cb_variant_to_person` is very large. Add a dry-run first (see [Dry-run a query](../cost-awareness/dry-run-query.md)). Consider filtering on specific chromosomes if your gene panel allows it. |
-| Carrier count seems too high | You may be counting variants, not carriers. Use `COUNT(DISTINCT person_id)`, not `COUNT(*)`. |
-
 ## Cost note
 
 **Medium-high.** `cb_variant_to_person` is one of the largest tables in the CDR. A full scan can process hundreds of GB. Always dry-run first. If querying repeatedly, materialize the carrier table for your gene panel as a saved query result or temporary table.

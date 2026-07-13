@@ -60,8 +60,8 @@ Step 6  Flag significant results (q < 0.05)
 
 ## Step 1: Verify the Feature Matrix
 
-**Reference:** [audit-temporal-leakage](../references/audit-temporal-leakage.md),
-[build-shap-feature-matrix](../references/build-shap-feature-matrix.md)
+**Reference:** [audit-temporal-leakage](../reference/temporal-windowing/audit-temporal-leakage.md),
+[build-shap-feature-matrix](../reference/statistical-modeling/build-shap-feature-matrix.md)
 
 Before running any regression, verify that the feature matrix is clean. Two
 classes of problems must be checked:
@@ -116,7 +116,7 @@ seconds and prevent you from interpreting garbage.
 
 ## Step 2: Run PC-Adjusted Logistic Regression for Each Gene
 
-**Reference:** [pc-adjusted-regression](../references/pc-adjusted-regression.md)
+**Reference:** [pc-adjusted-regression](../reference/statistical-modeling/pc-adjusted-regression.md)
 
 For each gene, fit a logistic regression predicting case/control status from
 carrier status, adjusted for ancestry PCs, age, and sex. This is the core
@@ -164,7 +164,7 @@ results_df = pd.DataFrame(results)
 > The code above handles this by returning `NaN` for genes with <5 carriers in
 > either group. For a more principled approach, use Firth's penalized logistic
 > regression, which handles separation gracefully. See the
-> [pc-adjusted-regression](../references/pc-adjusted-regression.md) Variation
+> [pc-adjusted-regression](../reference/statistical-modeling/pc-adjusted-regression.md) Variation
 > section for the Firth implementation.
 
 ---
@@ -346,7 +346,7 @@ one group.
 The code in Step 2 handles this by excluding genes with <5 carriers in either
 group. For a more principled approach, use Firth's penalized logistic regression,
 which shrinks the coefficient toward zero and produces finite estimates even
-under separation. See the [pc-adjusted-regression](../references/pc-adjusted-regression.md)
+under separation. See the [pc-adjusted-regression](../reference/statistical-modeling/pc-adjusted-regression.md)
 Variation section.
 
 ### 3. Impressive OR, negligible carrier count
@@ -382,7 +382,7 @@ and supplementary tables.
 ## What Comes Next
 
 - For SHAP-based feature importance analysis, see
-  [build-shap-feature-matrix](../references/build-shap-feature-matrix.md)
+  [build-shap-feature-matrix](../reference/statistical-modeling/build-shap-feature-matrix.md)
 - To add clinical features (lab values, medications) and re-run the analysis,
   see [add-windowed-lab-feature](./add-windowed-lab-feature.md)
 - To visualize results (forest plots, Manhattan-style plots), see your
