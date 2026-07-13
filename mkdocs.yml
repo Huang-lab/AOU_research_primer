@@ -1,0 +1,93 @@
+site_name: All of Us Query Documentation
+site_description: Task-based reference for querying the All of Us Researcher Workbench CDR
+repo_url: https://github.com/mohibul-07/AOU_Documentation
+repo_name: mohibul-07/AOU_Documentation
+
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - toc:
+      permalink: true
+  - tables
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Reference:
+    - Cohort Definition:
+      - Define case cohort by condition: reference/cohort-definition/define-case-cohort-by-condition.md
+      - Build matched controls: reference/cohort-definition/build-matched-controls.md
+      - Exclude by condition history: reference/cohort-definition/exclude-by-condition-history.md
+    - Demographics & Ancestry:
+      - Extract demographic features: reference/demographics-ancestry/extract-demographic-features.md
+      - Compute ancestry PCs: reference/demographics-ancestry/compute-ancestry-pcs.md
+    - Conditions & Phenotypes:
+      - Query condition occurrence: reference/conditions-phenotypes/query-condition-occurrence.md
+      - Build multi-code phenotype: reference/conditions-phenotypes/build-multi-code-phenotype.md
+    - Labs & Measurements:
+      - Query lab measurements: reference/labs-measurements/query-lab-measurements.md
+    - Medications:
+      - Query drug exposures: reference/medications/query-drug-exposures.md
+    - Temporal Windowing:
+      - Apply index-date window: reference/temporal-windowing/apply-index-date-window.md
+      - Audit temporal leakage: reference/temporal-windowing/audit-temporal-leakage.md
+    - Genomics:
+      - Query carrier status: reference/genomics/query-carrier-status.md
+      - Filter ClinVar P/LP: reference/genomics/filter-clinvar-plp.md
+      - Discover genomics tables: reference/genomics/discover-genomics-tables.md
+    - Cost Awareness:
+      - Dry-run a query: reference/cost-awareness/dry-run-query.md
+      - Cap query cost: reference/cost-awareness/cap-query-cost.md
+    - Surveys:
+      - Query survey responses: reference/surveys/query-survey-responses.md
+    - Procedures:
+      - Query procedure occurrence: reference/procedures/query-procedure-occurrence.md
+    - Visits:
+      - Query visit occurrence: reference/visits/query-visit-occurrence.md
+    - Data Quality:
+      - Filter by observation period: reference/data-quality/filter-by-observation-period.md
+      - Distinguish EHR from survey sources: reference/data-quality/distinguish-ehr-survey-sources.md
+    - Statistical Modeling:
+      - Build SHAP feature matrix: reference/statistical-modeling/build-shap-feature-matrix.md
+      - PC-adjusted regression: reference/statistical-modeling/pc-adjusted-regression.md
+  - Guides:
+    - Build genomic case-control cohort: guides/build-genomic-case-control-cohort.md
+    - Add windowed lab feature: guides/add-windowed-lab-feature.md
+    - Estimate and cap query cost: guides/estimate-and-cap-query-cost.md
+    - Case/control to FDR results: guides/case-control-to-fdr-results.md
+  - Pitfall Index: pitfall-index.md
+  - Glossary: glossary.md
+  - Template: TEMPLATE.md

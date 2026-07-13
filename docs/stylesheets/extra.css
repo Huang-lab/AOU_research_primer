@@ -1,0 +1,32 @@
+/* Pitfall admonition — high-visibility red/orange to match its severity */
+:root {
+  --md-admonition-icon--pitfall: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>');
+}
+
+.md-typeset .admonition.pitfall,
+.md-typeset details.pitfall {
+  border-color: #d32f2f;
+}
+
+.md-typeset .pitfall > .admonition-title,
+.md-typeset .pitfall > summary {
+  background-color: rgba(211, 47, 47, 0.1);
+}
+
+.md-typeset .pitfall > .admonition-title::before,
+.md-typeset .pitfall > summary::before {
+  background-color: #d32f2f;
+  -webkit-mask-image: var(--md-admonition-icon--pitfall);
+  mask-image: var(--md-admonition-icon--pitfall);
+}
+
+/* Version note — subtle blue */
+.md-typeset .admonition.version-note,
+.md-typeset details.version-note {
+  border-color: #1565c0;
+}
+
+.md-typeset .version-note > .admonition-title,
+.md-typeset .version-note > summary {
+  background-color: rgba(21, 101, 192, 0.1);
+}
