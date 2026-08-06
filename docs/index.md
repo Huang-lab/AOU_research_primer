@@ -1,4 +1,4 @@
-# All of Us Query Documentation
+# All of Us Research Primer
 
 Task-based reference for querying the All of Us Researcher Workbench CDR.
 Each page answers one "how do I do X" question with exact code, parameters,

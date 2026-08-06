@@ -1,7 +1,8 @@
-site_name: All of Us Query Documentation
+site_name: All of Us Research Primer
 site_description: Task-based reference for querying the All of Us Researcher Workbench CDR
-repo_url: https://github.com/mohibul-07/AOU_Documentation
-repo_name: mohibul-07/AOU_Documentation
+site_url: https://huang-lab.github.io/AOU_research_primer/
+repo_url: https://github.com/Huang-lab/AOU_research_primer
+repo_name: Huang-lab/AOU_research_primer
 
 docs_dir: docs
 

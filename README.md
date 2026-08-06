@@ -1,6 +1,6 @@
-# All of Us Query Documentation
+# All of Us Research Primer
 
-**[Live docs →](https://mohibul-07.github.io/AOU_Documentation/)**
+**[Live docs](https://huang-lab.github.io/AOU_research_primer/)**
 
 Task-based reference for querying the All of Us Researcher Workbench CDR.
 Each page answers one "how do I do X" question with exact code, parameters,
