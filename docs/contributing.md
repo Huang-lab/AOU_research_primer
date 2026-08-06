@@ -68,7 +68,7 @@ Use a temporary environment and run a strict documentation build before submitti
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-python -m pip install mkdocs-material
+python -m pip install -r requirements-docs.txt
 mkdocs build --strict
 ```
 
