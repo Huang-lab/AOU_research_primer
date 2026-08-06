@@ -136,6 +136,11 @@ provenance mixing, cost traps). Use as a pre-submission checklist.
 [Reference page template](TEMPLATE.md) — the fixed structure every
 Reference page follows.
 
+## Contributing
+
+Technical contributions must be battle tested in the All of Us Researcher Workbench before submission.
+See the [contributing guide](CONTRIBUTING.md) for validation evidence, privacy requirements, content placement, and the pull request checklist.
+
 ---
 
 ## Guides
