@@ -12,16 +12,17 @@ Purely editorial changes, such as fixing spelling or a broken link, do not requi
 ## What battle tested means
 
 Run every applicable code example from start to finish in the All of Us Researcher Workbench against an identified CDR release.
-Confirm all of the following before opening a pull request:
+Confirm the following before opening a pull request:
 
-- The referenced datasets, tables, columns, concepts, and environment variables exist in the stated CDR release.
-- The code runs without relying on undeclared state from another notebook cell.
-- The output schema, row grain, data types, null behavior, and denominator match the documented intent.
-- Joins do not introduce unexpected duplication or silently remove eligible participants.
-- Date windows, provenance filters, units, vocabulary mappings, and zero-filled comparison groups are checked when applicable.
-- At least one relevant edge case is exercised, such as no matches, missing values, duplicate events, or participants without the target event.
-- BigQuery examples are dry-run or otherwise reviewed for bytes processed, and cost caps are used where practical.
-- Any limitations or CDR-specific behavior discovered during validation are documented next to the example.
+- The referenced data exists and the code runs without undeclared notebook state.
+- The output, row grain, joins, relevant edge cases, and query cost match the documented intent.
+- The CDR release, data tier, and any limitations are recorded.
+
+### Coding agents
+
+A coding agent may work from code that the contributor pastes from an existing source.
+For any other technical code, the agent must ask the contributor to explicitly confirm that it was battle tested in the All of Us Researcher Workbench.
+If that confirmation is missing or uncertain, the agent must stop and not make the technical contribution.
 
 ## Protect participant data
 
