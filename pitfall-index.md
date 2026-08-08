@@ -132,15 +132,35 @@ code fix, and context live.
   versions.
   [Source](reference/conditions-phenotypes/build-multi-code-phenotype.md)
 
-- **Exact-match filtering on ClinVar `clinical_significance`.**
+- **Exact-match filtering on ClinVar `clinical_significance_string`.**
   ClinVar uses compound slash/comma-separated strings. `= 'Pathogenic'`
-  misses `Pathogenic/Likely pathogenic` and others. Use `LIKE`.
+  misses `Pathogenic/Likely pathogenic` and others. Use `LIKE '%athogenic%'`.
+  [Source](reference/genomics/filter-clinvar-plp.md)
+
+- **`LIKE '%Pathogenic%'` silently includes "Conflicting classifications".**
+  Variants with conflicting submissions are not definitive P/LP calls.
+  Add `NOT LIKE '%Conflicting%'`.
+  [Source](reference/genomics/filter-clinvar-plp.md)
+
+- **Compound ClinVar strings can contain both "Pathogenic" and "Benign".**
+  Entries like "Pathogenic/Likely benign" match `LIKE '%Pathogenic%'` but
+  are not clean P/LP. Add `NOT LIKE '%enign%'`.
   [Source](reference/genomics/filter-clinvar-plp.md)
 
 - **ClinVar annotations change between CDR releases.**
   A VUS in v7 may be reclassified as Pathogenic in v8. Document your CDR
   version and re-run when upgrading.
   [Source](reference/genomics/filter-clinvar-plp.md)
+
+- **`cb_variant_to_person.person_ids` is an ARRAY, not a scalar.**
+  Using it as `vp.person_id` silently fails or returns wrong results. You
+  must use `UNNEST(person_ids) AS person_id`.
+  [Source](reference/genomics/query-carrier-status.md)
+
+- **`pca_features` is a string, not a native array.**
+  Calling `.tolist()` directly gives strings, not lists. Parse with
+  `ast.literal_eval()` first.
+  [Source](reference/demographics-ancestry/compute-ancestry-pcs.md)
 
 - **Assuming column names from old code or documentation.**
   Genomics schemas change across CDR releases. Always verify with

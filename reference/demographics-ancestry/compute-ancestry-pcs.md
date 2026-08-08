@@ -38,7 +38,7 @@ CDR v7+ includes the genomics ancillary tables with pre-computed PCs. Earlier CD
 | Column | Type | Notes |
 |---|---|---|
 | `person_id` | INT64 | Joins to `person.person_id` |
-| `pca_features` | STRING (repeated/array) or FLOAT64 columns | Pre-computed PC values. Format may vary by CDR version -- check schema. |
+| `pca_features` | STRING | Pre-computed PC values stored as a Python list literal (e.g., `"[0.123, -0.456, ...]"`). Contains 16 PCs. Requires parsing with `ast.literal_eval()`. |
 | `ancestry_pred` | STRING | Predicted genetic ancestry label (e.g., `eur`, `afr`, `amr`, `eas`, `sas`, `mid`) |
 | `ancestry_pred_other` | STRING | Secondary ancestry prediction for admixed individuals |
 
@@ -81,17 +81,22 @@ print(f"Participants with PCs: {len(pc_df):,}")
 print(f"Ancestry distribution:\n{pc_df['ancestry_pred'].value_counts()}")
 ```
 
-If PCs are stored as an array column, expand them into separate columns:
+`pca_features` is stored as a string representation of a Python list. Parse it into 16 separate PC columns:
 
 ```python
-# Expand array of PCs into individual columns
+import ast
+
+# Parse the 16 PCs from the pca_features string
+pc_data = pc_df["pca_features"].apply(ast.literal_eval)
 pc_expanded = pd.DataFrame(
-    pc_df["pca_features"].tolist(),
-    columns=[f"PC{i+1}" for i in range(len(pc_df["pca_features"].iloc[0]))]
+    pc_data.tolist(),
+    columns=[f"PC{i+1}" for i in range(16)]
 )
 pc_expanded["person_id"] = pc_df["person_id"].values
 pc_expanded["ancestry_pred"] = pc_df["ancestry_pred"].values
 ```
+
+> **Pitfall — `pca_features` is a string, not a native array.** Calling `.tolist()` directly on the column gives you a list of strings, not a list of lists. You must parse each value with `ast.literal_eval()` first. Without parsing, downstream numeric operations will fail or silently produce NaN.
 
 > **Pitfall -- using self-reported race as a proxy for genetic ancestry.**
 > Self-reported race does not capture genetic admixture and is a social, not biological, construct. In any genetic association analysis (GWAS, PRS, Mendelian randomization), using race instead of ancestry PCs as covariates will leave population stratification uncontrolled, producing spurious associations. For example, a variant common in one ancestry group will appear associated with any trait that differs in prevalence across racial groups. Always include ancestry PCs as covariates in your regression model, not self-reported race.
@@ -213,7 +218,7 @@ print(pd.crosstab(
 | Symptom | Cause |
 |---|---|
 | Table `prep_ancestry` not found | You are in the Registered Tier or your CDR version predates the genomics ancillary tables. Ancestry PCs require Controlled Tier with genomic data access. |
-| Inner join drops many participants | Not all AoU participants have whole-genome sequencing. As of CDR v7, roughly 250K participants have WGS data. The rest will not appear in `prep_ancestry`. Report the drop in your methods section. |
+| Inner join drops many participants | Not all AoU participants have whole-genome sequencing. As of CDR v8, ~415K participants have WGS data (~74% of the cohort). The rest will not appear in `prep_ancestry`. Report the drop in your methods section. |
 | `pca_features` returns a single string instead of array | Some CDR versions store PCs as a comma-separated string. Parse with `pc_df["pca_features"].str.split(",", expand=True).astype(float)`. |
 | Column names differ from this document | AoU updates table schemas across CDR versions. Use the `INFORMATION_SCHEMA.COLUMNS` query in the Reference section to discover the current layout. |
 
@@ -242,7 +247,7 @@ These are statistical clusters, not racial or ethnic identities. A participant l
 
 ## Cost note
 
-The `prep_ancestry` table is moderate in size (one row per participant with WGS data, ~250K rows). Queries typically process 100 MB-1 GB depending on how many PC columns are stored. Repeated queries during interactive analysis are unlikely to exceed free-tier BigQuery limits, but cache results in a dataframe when possible to minimize redundant scans.
+The `prep_ancestry` table is moderate in size (one row per participant with WGS data, ~415K rows). Queries typically process 100 MB-1 GB depending on how many PC columns are stored. Repeated queries during interactive analysis are unlikely to exceed free-tier BigQuery limits, but cache results in a dataframe when possible to minimize redundant scans.
 
 ---
 

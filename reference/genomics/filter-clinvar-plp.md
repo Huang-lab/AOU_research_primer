@@ -13,9 +13,11 @@ Add a ClinVar clinical significance filter to variant queries, restricting resul
 
 ## Reference
 
-ClinVar classifications are stored in the `cb_variant_attribute` table (or a related annotations table, depending on CDR version) in a `clinical_significance` string column. The values in this column are not simple enumerations -- they are free-text compound strings drawn from ClinVar's submission summaries.
+ClinVar classifications are stored in the `cb_variant_attribute` table in the `clinical_significance_string` column (named `clinical_significance` in older CDR versions). The values in this column are not simple enumerations -- they are free-text compound strings drawn from ClinVar's submission summaries.
 
-Common `clinical_significance` values in AoU data:
+> **Version note:** The column was renamed from `clinical_significance` to `clinical_significance_string` in recent CDR releases. Similarly, the consequence column is now `cons_str` (was `consequence`). Always verify with `INFORMATION_SCHEMA`.
+
+Common `clinical_significance_string` values in AoU data:
 
 | Value | Contains "Pathogenic"? |
 |---|---|
@@ -46,11 +48,12 @@ CDR = os.environ["WORKSPACE_CDR"]
 # See distinct clinical_significance values and their counts
 explore_sql = f"""
 SELECT
-    clinical_significance,
+    clinical_significance_string,
     COUNT(*) AS n_variants
 FROM `{CDR}.cb_variant_attribute`
-WHERE clinical_significance IS NOT NULL
-GROUP BY clinical_significance
+WHERE clinical_significance_string IS NOT NULL
+  AND clinical_significance_string != ''
+GROUP BY clinical_significance_string
 ORDER BY n_variants DESC
 LIMIT 50
 """
@@ -64,44 +67,44 @@ print(sig_values.to_string(index=False))
 plp_sql = f"""
 SELECT
     va.vid,
-    va.clinical_significance,
-    va.consequence,
+    va.clinical_significance_string,
+    va.cons_str,
     g.gene_symbol
 FROM `{CDR}.cb_variant_attribute` va
 JOIN `{CDR}.cb_variant_attribute_genes` g ON va.vid = g.vid
 WHERE g.gene_symbol IN ('BRCA1', 'BRCA2')
   AND (
-      va.clinical_significance LIKE '%Pathogenic%'
-      OR va.clinical_significance LIKE '%pathogenic%'
+      va.clinical_significance_string LIKE '%Pathogenic%'
+      OR va.clinical_significance_string LIKE '%pathogenic%'
   )
 """
 plp_variants = client.query(plp_sql).to_dataframe()
 print(f"P/LP variants: {len(plp_variants):,}")
-print(plp_variants["clinical_significance"].value_counts())
+print(plp_variants["clinical_significance_string"].value_counts())
 ```
 
-> **Pitfall: exact-match filtering on `clinical_significance`.** If you write `WHERE clinical_significance = 'Pathogenic'`, you will miss every compound classification: `"Pathogenic/Likely pathogenic"`, `"Pathogenic, risk factor"`, `"Likely pathogenic"`, and others. ClinVar uses slash-separated and comma-separated compound strings. Use `LIKE '%Pathogenic%'` or parse the string. Note that `LIKE '%Pathogenic%'` will also match `"Conflicting classifications of pathogenicity"` -- you may want to exclude that explicitly (see Step 3).
+> **Pitfall: exact-match filtering on `clinical_significance_string`.** If you write `WHERE clinical_significance_string = 'Pathogenic'`, you will miss every compound classification: `"Pathogenic/Likely pathogenic"`, `"Pathogenic, risk factor"`, `"Likely pathogenic"`, and others. ClinVar uses slash-separated and comma-separated compound strings. Use `LIKE '%athogenic%'` or parse the string. Note that `LIKE '%athogenic%'` will also match `"Conflicting classifications of pathogenicity"` -- you must exclude that explicitly (see Step 3).
 
-> **Pitfall — `LIKE '%Pathogenic%'` silently includes "Conflicting classifications of pathogenicity".** This inflates your P/LP carrier count by including variants where submissions disagree on pathogenicity. These are not definitive P/LP calls. Add `AND va.clinical_significance NOT LIKE '%Conflicting%'` to exclude them (see Step 3).
+> **Pitfall — `LIKE '%Pathogenic%'` silently includes "Conflicting classifications of pathogenicity".** This inflates your P/LP carrier count by including variants where submissions disagree on pathogenicity. These are not definitive P/LP calls. Add `AND va.clinical_significance_string NOT LIKE '%Conflicting%'` to exclude them (see Step 3).
+
+> **Pitfall — compound strings can contain both "Pathogenic" and "Benign".** ClinVar entries like "Pathogenic/Likely benign" match `LIKE '%Pathogenic%'` but are not clean P/LP calls. Add `AND va.clinical_significance_string NOT LIKE '%enign%'` alongside the Conflicting exclusion to prevent these from inflating your carrier set.
 
 ### Step 3: Exclude conflicting classifications
 
-The `LIKE '%Pathogenic%'` pattern matches "Conflicting classifications of pathogenicity", which is not a definitive P/LP call. Exclude it:
+The `LIKE '%Pathogenic%'` pattern matches "Conflicting classifications of pathogenicity", which is not a definitive P/LP call. It can also match compound strings like "Pathogenic/Likely benign" that contain both pathogenic and benign assertions. Exclude both:
 
 ```python
 plp_strict_sql = f"""
 SELECT
     va.vid,
-    va.clinical_significance,
+    va.clinical_significance_string,
     g.gene_symbol
 FROM `{CDR}.cb_variant_attribute` va
 JOIN `{CDR}.cb_variant_attribute_genes` g ON va.vid = g.vid
 WHERE g.gene_symbol IN ('BRCA1', 'BRCA2')
-  AND (
-      va.clinical_significance LIKE '%Pathogenic%'
-      OR va.clinical_significance LIKE '%pathogenic%'
-  )
-  AND va.clinical_significance NOT LIKE '%Conflicting%'
+  AND va.clinical_significance_string LIKE '%athogenic%'
+  AND va.clinical_significance_string NOT LIKE '%Conflicting%'
+  AND va.clinical_significance_string NOT LIKE '%enign%'
 """
 plp_strict = client.query(plp_strict_sql).to_dataframe()
 print(f"Strict P/LP variants (excl. conflicting): {len(plp_strict):,}")
@@ -114,19 +117,17 @@ Combine the P/LP filter with a carrier-status query:
 ```python
 plp_carriers_sql = f"""
 SELECT DISTINCT
-    vp.person_id,
+    person_id,
     g.gene_symbol,
-    va.clinical_significance,
-    vp.allele_count
+    va.clinical_significance_string
 FROM `{CDR}.cb_variant_attribute_genes` g
 JOIN `{CDR}.cb_variant_attribute` va ON g.vid = va.vid
-JOIN `{CDR}.cb_variant_to_person` vp ON va.vid = vp.vid
+JOIN `{CDR}.cb_variant_to_person` vp ON va.vid = vp.vid,
+    UNNEST(vp.person_ids) AS person_id
 WHERE g.gene_symbol IN UNNEST(@genes)
-  AND (
-      va.clinical_significance LIKE '%Pathogenic%'
-      OR va.clinical_significance LIKE '%pathogenic%'
-  )
-  AND va.clinical_significance NOT LIKE '%Conflicting%'
+  AND va.clinical_significance_string LIKE '%athogenic%'
+  AND va.clinical_significance_string NOT LIKE '%enign%'
+  AND va.clinical_significance_string NOT LIKE '%Conflicting%'
 """
 job_config = bigquery.QueryJobConfig(
     query_parameters=[
@@ -161,16 +162,16 @@ tiered_sql = f"""
 SELECT
     va.vid,
     g.gene_symbol,
-    va.clinical_significance,
+    va.clinical_significance_string,
     CASE
-        WHEN va.clinical_significance LIKE '%Pathogenic%'
-             AND va.clinical_significance NOT LIKE '%Conflicting%'
+        WHEN va.clinical_significance_string LIKE '%Pathogenic%'
+             AND va.clinical_significance_string NOT LIKE '%Conflicting%'
              THEN 'P_LP'
-        WHEN va.clinical_significance LIKE '%Conflicting%'
+        WHEN va.clinical_significance_string LIKE '%Conflicting%'
              THEN 'Conflicting'
-        WHEN va.clinical_significance LIKE '%Uncertain%'
+        WHEN va.clinical_significance_string LIKE '%Uncertain%'
              THEN 'VUS'
-        WHEN va.clinical_significance LIKE '%enign%'
+        WHEN va.clinical_significance_string LIKE '%enign%'
              THEN 'B_LB'
         ELSE 'Other'
     END AS significance_tier
@@ -189,8 +190,8 @@ If you are uncertain about capitalization conventions across CDR versions:
 ```python
 # Case-insensitive approach
 case_safe_filter = """
-    LOWER(va.clinical_significance) LIKE '%pathogenic%'
-    AND LOWER(va.clinical_significance) NOT LIKE '%conflicting%'
+    LOWER(va.clinical_significance_string) LIKE '%pathogenic%'
+    AND LOWER(va.clinical_significance_string) NOT LIKE '%conflicting%'
 """
 ```
 
@@ -200,14 +201,14 @@ For fine-grained control, parse the compound strings with `REGEXP_CONTAINS`:
 
 ```python
 regex_sql = f"""
-SELECT vid, clinical_significance
+SELECT vid, clinical_significance_string
 FROM `{CDR}.cb_variant_attribute`
 WHERE REGEXP_CONTAINS(
-    clinical_significance,
+    clinical_significance_string,
     r'(?i)^(Likely )?[Pp]athogenic'
 )
 AND NOT REGEXP_CONTAINS(
-    clinical_significance,
+    clinical_significance_string,
     r'(?i)conflicting'
 )
 """
@@ -217,8 +218,8 @@ AND NOT REGEXP_CONTAINS(
 
 | Symptom | Cause |
 |---|---|
-| `LIKE '%Pathogenic%'` returns no rows | Column may be NULL for most variants (only ClinVar-annotated variants have a value), or the column name may differ in your CDR version. Check with `INFORMATION_SCHEMA`. |
-| `Unrecognized name: clinical_significance` | Column name differs in this CDR release. Run the schema discovery query from [Discover genomics table schemas](discover-genomics-tables.md). |
+| `LIKE '%Pathogenic%'` returns no rows | Column may be NULL or empty for most variants (only ClinVar-annotated variants have a value), or the column name may differ in your CDR version. Check with `INFORMATION_SCHEMA`. |
+| `Unrecognized name: clinical_significance` | Column was renamed to `clinical_significance_string` in recent CDR releases. Run the schema discovery query from [Discover genomics table schemas](discover-genomics-tables.md). |
 
 ## Cost note
 

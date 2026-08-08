@@ -18,13 +18,28 @@ AoU stores short-variant (SNV/indel) genomic data in several tables. For carrier
 
 | Table | Purpose |
 |---|---|
-| `cb_variant_to_person` | Maps each variant (by `vid`) to carriers (`person_id`) with zygosity |
+| `cb_variant_to_person` | Maps each variant (by `vid`) to carriers (`person_ids` — an ARRAY of INT64) |
 | `cb_variant_attribute` | Variant-level annotations (consequence, allele frequency, etc.) |
 | `cb_variant_attribute_genes` | Maps variants to gene symbols |
 
 The join path is: `cb_variant_attribute_genes` (gene filter) --> `cb_variant_attribute` (optional annotation filter) --> `cb_variant_to_person` (carrier lookup).
 
 **Join keys:** The shared key between these tables is `vid` (variant ID). In earlier CDR releases, the join key was named differently or required an intermediate table. Always verify with `INFORMATION_SCHEMA` if working with an unfamiliar CDR version.
+
+!!! warning "`person_ids` is an ARRAY column"
+    `cb_variant_to_person.person_ids` stores carrier IDs as a `REPEATED INT64`
+    (BigQuery ARRAY). You must use `UNNEST(person_ids) AS person_id` to
+    extract individual rows. Treating it as a scalar column will silently
+    produce wrong results or fail.
+
+
+!!! warning "column names changed in recent CDR releases"
+    The consequence column is now `cons_str` (was `consequence`) and the
+    ClinVar column is `clinical_significance_string` (was
+    `clinical_significance`). Similarly, there is no `allele_count` column on
+    `cb_variant_to_person`; determine zygosity by counting distinct variants
+    per person per gene. Always verify with `INFORMATION_SCHEMA`.
+
 
 ## Usage
 
@@ -42,13 +57,13 @@ genes = ["BRCA1", "BRCA2"]
 
 carrier_sql = f"""
 SELECT DISTINCT
-    vp.person_id,
+    person_id,
     g.gene_symbol,
-    vp.vid,
-    vp.allele_count          -- 1 = het, 2 = hom
+    vp.vid
 FROM `{CDR}.cb_variant_attribute_genes` g
 JOIN `{CDR}.cb_variant_to_person` vp
-    ON g.vid = vp.vid
+    ON g.vid = vp.vid,
+    UNNEST(vp.person_ids) AS person_id
 WHERE g.gene_symbol IN UNNEST(@genes)
 """
 job_config = bigquery.QueryJobConfig(
@@ -62,11 +77,20 @@ print(f"Unique carriers: {carriers_df['person_id'].nunique():,}")
 ```
 
 !!! pitfall "the result returns CARRIERS ONLY"
-    Non-carriers are completely absent from the output -- they do not appear as rows with zero variants. If you compute a carrier rate as `len(carriers_df) / len(carriers_df)`, you get 100%. Any rate, odds ratio, or enrichment calculated on the raw result has a missing denominator and is silently wrong. You must left-join back to your full cohort and fill missing values with zero.
+    Non-carriers are completely absent from the output -- they do not appear
+    as rows with zero variants. If you compute a carrier rate as
+    `len(carriers_df) / len(carriers_df)`, you get 100%. Any rate, odds ratio,
+    or enrichment calculated on the raw result has a missing denominator and
+    is silently wrong. You must left-join back to your full cohort and fill
+    missing values with zero.
 
 
 !!! pitfall "counting variants instead of carriers inflates carrier counts"
-    If you use `COUNT(*)` or `len(carriers_df)` to count carriers, you are counting variant rows, not distinct people. A participant carrying three variants in BRCA1 contributes three rows. Use `COUNT(DISTINCT person_id)` in SQL or `carriers_df['person_id'].nunique()` in pandas to get the true carrier count.
+    If you use `COUNT(*)` or `len(carriers_df)` to count carriers, you are
+    counting variant rows, not distinct people. A participant carrying three
+    variants in BRCA1 contributes three rows. Use `COUNT(DISTINCT person_id)`
+    in SQL or `carriers_df['person_id'].nunique()` in pandas to get the true
+    carrier count.
 
 
 ### Step 2: Left-join to full cohort and fill non-carriers
@@ -122,7 +146,12 @@ for col in per_gene_wide.columns:
 ```
 
 !!! pitfall "join key changes across CDR releases"
-    The column name used to link variant tables has changed in past CDR updates (e.g., `vid` may have been `variant_id` or required joining through an intermediate table). If your query returns zero rows unexpectedly, do not assume the data is empty -- verify the join key exists with `INFORMATION_SCHEMA`. See [Discover genomics table schemas](discover-genomics-tables.md).
+    The column name used to link variant tables has changed in past CDR
+    updates (e.g., `vid` may have been `variant_id` or required joining
+    through an intermediate table). If your query returns zero rows
+    unexpectedly, do not assume the data is empty -- verify the join key
+    exists with `INFORMATION_SCHEMA`. See [Discover genomics table
+    schemas](discover-genomics-tables.md).
 
 
 ## Variations
@@ -134,15 +163,17 @@ Add a ClinVar significance filter to return only clinically actionable variants:
 ```python
 plp_carrier_sql = f"""
 SELECT DISTINCT
-    vp.person_id,
+    person_id,
     g.gene_symbol,
     vp.vid,
-    va.clinical_significance
+    va.clinical_significance_string
 FROM `{CDR}.cb_variant_attribute_genes` g
 JOIN `{CDR}.cb_variant_attribute` va ON g.vid = va.vid
-JOIN `{CDR}.cb_variant_to_person` vp ON va.vid = vp.vid
+JOIN `{CDR}.cb_variant_to_person` vp ON va.vid = vp.vid,
+    UNNEST(vp.person_ids) AS person_id
 WHERE g.gene_symbol IN UNNEST(@genes)
-  AND va.clinical_significance LIKE '%athogenic%'
+  AND va.clinical_significance_string LIKE '%athogenic%'
+  AND va.clinical_significance_string NOT LIKE '%enign%'
 """
 ```
 
@@ -154,9 +185,10 @@ For a single gene, use a string parameter instead of an array:
 
 ```python
 single_gene_sql = f"""
-SELECT DISTINCT vp.person_id, vp.vid, vp.allele_count
+SELECT DISTINCT person_id, vp.vid
 FROM `{CDR}.cb_variant_attribute_genes` g
-JOIN `{CDR}.cb_variant_to_person` vp ON g.vid = vp.vid
+JOIN `{CDR}.cb_variant_to_person` vp ON g.vid = vp.vid,
+    UNNEST(vp.person_ids) AS person_id
 WHERE g.gene_symbol = 'BRCA1'
 """
 ```
@@ -167,15 +199,16 @@ Restrict to loss-of-function variants (frameshift, stop gained, splice donor/acc
 
 ```python
 lof_sql = f"""
-SELECT DISTINCT vp.person_id, g.gene_symbol, va.consequence
+SELECT DISTINCT person_id, g.gene_symbol, va.cons_str
 FROM `{CDR}.cb_variant_attribute_genes` g
 JOIN `{CDR}.cb_variant_attribute` va ON g.vid = va.vid
-JOIN `{CDR}.cb_variant_to_person` vp ON va.vid = vp.vid
+JOIN `{CDR}.cb_variant_to_person` vp ON va.vid = vp.vid,
+    UNNEST(vp.person_ids) AS person_id
 WHERE g.gene_symbol IN UNNEST(@genes)
-  AND va.consequence IN (
-      'frameshift_variant', 'stop_gained',
-      'splice_donor_variant', 'splice_acceptor_variant'
-  )
+  AND (va.cons_str LIKE '%frameshift%'
+       OR va.cons_str LIKE '%stop_gained%'
+       OR va.cons_str LIKE '%splice_donor%'
+       OR va.cons_str LIKE '%splice_acceptor%')
 """
 ```
 
