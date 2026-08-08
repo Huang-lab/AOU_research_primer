@@ -92,7 +92,12 @@ print(ingredient_df.to_string(index=False))
 ```
 
 !!! pitfall "querying a single brand or dose form silently undercounts exposures"
-    If your concept is a Clinical Drug (e.g., "metformin 500 MG Oral Tablet") or Branded Drug (e.g., "Glucophage") rather than an Ingredient, the `concept_ancestor` join captures only descendants of that specific formulation. Participants on other dose forms, generics, or combination products are silently missing. Always verify that your starting concept has `concept_class_id = 'Ingredient'` before querying.
+    If your concept is a Clinical Drug (e.g., "metformin 500 MG Oral Tablet")
+    or Branded Drug (e.g., "Glucophage") rather than an Ingredient, the
+    `concept_ancestor` join captures only descendants of that specific
+    formulation. Participants on other dose forms, generics, or combination
+    products are silently missing. Always verify that your starting concept
+    has `concept_class_id = 'Ingredient'` before querying.
 
 
 ### Step 2: Query by ingredient using `concept_ancestor`
@@ -127,7 +132,15 @@ print(f"Unique participants: {metformin_df['person_id'].nunique():,}")
 ```
 
 !!! pitfall "querying by exact `drug_concept_id` for a specific product misses most exposures"
-    If you search for `drug_concept_id = 1503297` directly (the ingredient concept) in `drug_exposure`, you will get very few or zero results because most records are stored at the Clinical Drug or Branded Drug level (e.g., "metformin 500 MG Oral Tablet", concept_id 1502809). Searching for a single brand name like "Glucophage" misses all generic prescriptions, extended-release formulations, and combination products (e.g., metformin/sitagliptin). Always use `concept_ancestor` to roll up from the ingredient level, capturing the entire RxNorm subtree. This is the single most common medication query mistake in OMOP-based research.
+    If you search for `drug_concept_id = 1503297` directly (the ingredient
+    concept) in `drug_exposure`, you will get very few or zero results because
+    most records are stored at the Clinical Drug or Branded Drug level (e.g.,
+    "metformin 500 MG Oral Tablet", concept_id 1502809). Searching for a
+    single brand name like "Glucophage" misses all generic prescriptions,
+    extended-release formulations, and combination products (e.g.,
+    metformin/sitagliptin). Always use `concept_ancestor` to roll up from the
+    ingredient level, capturing the entire RxNorm subtree. This is the single
+    most common medication query mistake in OMOP-based research.
 
 
 Check what drug forms you are capturing:
@@ -147,7 +160,10 @@ print(form_counts.to_string())
 ### Step 3: Assess `drug_exposure_end_date` completeness
 
 !!! pitfall "`drug_exposure_end_date` is unreliable for duration calculations"
-    In many AoU source systems, `drug_exposure_end_date` is either NULL, set equal to `drug_exposure_start_date`, or populated with a default (start_date + 1 day). Before using end dates to calculate exposure duration, check the actual data.
+    In many AoU source systems, `drug_exposure_end_date` is either NULL, set
+    equal to `drug_exposure_start_date`, or populated with a default
+    (start_date + 1 day). Before using end dates to calculate exposure
+    duration, check the actual data.
 
 
 ```python
@@ -316,6 +332,15 @@ concurrent_df = client.query(concurrent_query).to_dataframe()
 ```
 
 ---
+
+!!! pitfall "drugs with dual indications contaminate cohorts in general biobanks"
+    Bone-modifying agents are a key example: denosumab is sold as Xgeva (120
+    mg, oncology) AND Prolia (60 mg, osteoporosis); zoledronic acid is Zometa
+    (4 mg, oncology) AND Reclast (5 mg, osteoporosis). In All of Us (a general
+    population biobank), ~80% of patients on these drugs have osteoporosis,
+    not cancer. Using drug exposure alone as a cancer treatment proxy is
+    unreliable — always cross-reference against a confirmed cancer diagnosis.
+
 
 ## Troubleshooting
 

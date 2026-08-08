@@ -80,11 +80,23 @@ print(f"Case count: {len(cases_df)}")
 ```
 
 !!! pitfall "querying `condition_source_concept_id` instead of `condition_concept_id`"
-    Source concept IDs retain the original vocabulary (ICD-10-CM, ICD-9-CM, etc.). If you filter on `condition_source_concept_id`, you capture only participants whose EHR happened to use that specific source code. Participants whose records were coded in a different source vocabulary but map to the same SNOMED standard concept are silently excluded. Always query `condition_concept_id` (the standard concept) unless you have a specific reason to restrict to a single source vocabulary.
+    Source concept IDs retain the original vocabulary (ICD-10-CM, ICD-9-CM,
+    etc.). If you filter on `condition_source_concept_id`, you capture only
+    participants whose EHR happened to use that specific source code.
+    Participants whose records were coded in a different source vocabulary but
+    map to the same SNOMED standard concept are silently excluded. Always
+    query `condition_concept_id` (the standard concept) unless you have a
+    specific reason to restrict to a single source vocabulary.
 
 
 !!! pitfall "filtering on an exact `condition_concept_id` without using `concept_ancestor`"
-    SNOMED is hierarchical. A top-level concept like "Malignant neoplasm of colon" (concept `4089661`) has dozens of site-specific children (ascending colon, transverse colon, sigmoid colon, etc.). Filtering `WHERE condition_concept_id = 4089661` returns only records coded at that exact level. Records coded to child concepts are silently missed, undercounting your cohort — often dramatically. Always join through `concept_ancestor` to capture the full descendant tree.
+    SNOMED is hierarchical. A top-level concept like "Malignant neoplasm of
+    colon" (concept `4089661`) has dozens of site-specific children (ascending
+    colon, transverse colon, sigmoid colon, etc.). Filtering `WHERE
+    condition_concept_id = 4089661` returns only records coded at that exact
+    level. Records coded to child concepts are silently missed, undercounting
+    your cohort — often dramatically. Always join through `concept_ancestor`
+    to capture the full descendant tree.
 
 
 ### Step 3 — Verify the descendant tree
@@ -214,7 +226,18 @@ This approach should be the exception, not the default. The standard concept pat
 
 ---
 
+!!! pitfall "secondary cancer concepts name the DESTINATION site, not the origin"
+    "Secondary malignant neoplasm of lung" (OMOP 36714927) means a metastasis
+    found IN the lung — it says nothing about where the primary cancer was. A
+    breast cancer patient with lung metastases will also have a "malignant
+    neoplasm of lung" code, and could be pulled into a Lung primary cohort.
+    When building cancer cohorts, either exclude secondary neoplasm concepts
+    (ancestor 432851) or cross-reference against each patient's primary
+    diagnosis to avoid contamination.
+
+
 ## See also
 
 - [Build matched controls for a case cohort](build-matched-controls.md) — find age/sex-matched controls for the cohort defined here
 - [Exclude participants by condition history](exclude-by-condition-history.md) — remove participants with prior diagnoses from a study cohort
+- [Discover OMOP concepts by name or hierarchy](discover-omop-concepts.md) — find concept IDs by searching names and expanding hierarchies

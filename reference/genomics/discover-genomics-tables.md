@@ -184,6 +184,40 @@ sizes["size_gb"] = sizes["total_logical_bytes"] / (1024**3)
 print(sizes[["table_name", "total_rows", "size_gb"]].to_string(index=False))
 ```
 
+### Pull a full variant catalog for a gene
+
+Retrieve all annotations for every variant in a gene — useful for exploratory analysis before deciding on filters:
+
+```python
+catalog_sql = f"""
+SELECT
+    va.vid, va.cons_str,
+    va.clinical_significance_string AS clinvar,
+    va.protein_change, va.allele_frequency, va.participant_count
+FROM `{CDR}.cb_variant_attribute` va
+JOIN `{CDR}.cb_variant_attribute_genes` vag ON va.vid = vag.vid
+WHERE vag.gene_symbol = 'BRCA1'
+ORDER BY va.participant_count DESC
+"""
+catalog = client.query(catalog_sql).to_dataframe()
+print(f"Variants: {len(catalog):,}")
+print(catalog.head(10))
+```
+
+### Parse VID format into genomic coordinates
+
+The `vid` column follows the pattern `chromosome-position-ref-alt` (e.g., `1-45331833-C-G`). No `chr` prefix.
+
+```python
+vid_parts = catalog["vid"].str.split("-", expand=True)
+catalog["CHROM"] = vid_parts[0]
+catalog["POS"] = vid_parts[1].astype(int)
+catalog["REF"] = vid_parts[2]
+catalog["ALT"] = vid_parts[3]
+```
+
+This is needed for joining to external databases (e.g., AlphaMissense, gnomAD) that use positional coordinates rather than AoU's `vid` format.
+
 ## Troubleshooting
 
 | Symptom | Cause |

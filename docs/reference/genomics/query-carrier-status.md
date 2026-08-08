@@ -193,6 +193,35 @@ WHERE g.gene_symbol = 'BRCA1'
 """
 ```
 
+### Classify heterozygous vs biallelic carriers
+
+When a gene follows autosomal recessive inheritance (e.g., MUTYH), distinguish carriers with one variant (heterozygous) from those with two or more (biallelic/compound heterozygous):
+
+```python
+pairs_sql = f"""
+SELECT person_id, vp.vid
+FROM `{CDR}.cb_variant_to_person` vp,
+    UNNEST(vp.person_ids) AS person_id
+WHERE vp.vid IN (
+    SELECT va.vid
+    FROM `{CDR}.cb_variant_attribute` va
+    JOIN `{CDR}.cb_variant_attribute_genes` vag ON va.vid = vag.vid
+    WHERE vag.gene_symbol = 'MUTYH'
+    AND va.clinical_significance_string LIKE '%athogenic%'
+    AND va.clinical_significance_string NOT LIKE '%enign%'
+)
+"""
+pairs_df = client.query(pairs_sql).to_dataframe()
+
+# Count distinct variants per person
+vpp = pairs_df.groupby("person_id")["vid"].nunique().reset_index()
+vpp.columns = ["person_id", "n_variants"]
+
+biallelic = vpp[vpp["n_variants"] >= 2]["person_id"].tolist()
+heterozygous = vpp[vpp["n_variants"] == 1]["person_id"].tolist()
+print(f"Biallelic: {len(biallelic)}, Heterozygous: {len(heterozygous)}")
+```
+
 ### Add variant consequence filtering
 
 Restrict to loss-of-function variants (frameshift, stop gained, splice donor/acceptor):

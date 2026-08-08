@@ -104,7 +104,12 @@ demo["sex_male"] = (demo["gender_concept_id"] == 8507).astype(int)
 ```
 
 !!! pitfall "including the target variable or its proxies in the feature matrix"
-    If the label is "has cancer" and you include `cond_cancer_diagnosis` as a feature, the model achieves near-perfect accuracy and SHAP assigns it all importance -- but the result is meaningless. Proxies are subtler: a cancer-specific drug or a cancer-staging lab test. Audit your concept list against the target condition and remove any concepts that are definitionally linked to the outcome.
+    If the label is "has cancer" and you include `cond_cancer_diagnosis` as a
+    feature, the model achieves near-perfect accuracy and SHAP assigns it all
+    importance -- but the result is meaningless. Proxies are subtler: a
+    cancer-specific drug or a cancer-staging lab test. Audit your concept list
+    against the target condition and remove any concepts that are
+    definitionally linked to the outcome.
 
 
 ### Step 4: Merge all feature blocks
@@ -126,7 +131,13 @@ for block_name, block_df in [
 ```
 
 !!! pitfall "inconsistent categorical encoding"
-    SHAP values for one-hot encoded features vs. ordinal encoded features are not comparable. One-hot encoding distributes importance across K dummy columns, diluting per-category SHAP values. Ordinal encoding concentrates importance in one column but imposes an ordering that may not exist. Choose one strategy, apply it to all categoricals, and document it. If using tree-based models (XGBoost, LightGBM), ordinal encoding is usually preferred -- these models handle ordinal splits natively.
+    SHAP values for one-hot encoded features vs. ordinal encoded features are
+    not comparable. One-hot encoding distributes importance across K dummy
+    columns, diluting per-category SHAP values. Ordinal encoding concentrates
+    importance in one column but imposes an ordering that may not exist.
+    Choose one strategy, apply it to all categoricals, and document it. If
+    using tree-based models (XGBoost, LightGBM), ordinal encoding is usually
+    preferred -- these models handle ordinal splits natively.
 
 
 ```python
@@ -145,7 +156,12 @@ for col in categorical_cols:
 ### Step 5: Handle NaN values
 
 !!! pitfall "NaN handling varies by model framework"
-    XGBoost treats NaN as a learnable split direction (left or right at each node), which is often beneficial. Scikit-learn tree models raise errors on NaN. LightGBM handles NaN but treats it differently than XGBoost. If you impute before training, SHAP values reflect the imputation strategy, not the missing data. If you leave NaN for XGBoost, SHAP correctly attributes importance to the "missing" pathway. Decide and document your strategy.
+    XGBoost treats NaN as a learnable split direction (left or right at each
+    node), which is often beneficial. Scikit-learn tree models raise errors on
+    NaN. LightGBM handles NaN but treats it differently than XGBoost. If you
+    impute before training, SHAP values reflect the imputation strategy, not
+    the missing data. If you leave NaN for XGBoost, SHAP correctly attributes
+    importance to the "missing" pathway. Decide and document your strategy.
 
 
 ```python
@@ -179,6 +195,38 @@ print(f"NaN columns (>50% missing): "
 ```
 
 ## Variations
+
+### Add per-gene carrier columns from variant data
+
+Convert variant-level carrier data (from [Query carrier status](../genomics/query-carrier-status.md)) into binary per-gene columns:
+
+```python
+# carriers_df has columns: person_id, gene_symbol, vid
+carrier_pivot = (
+    carriers_df.groupby(["person_id", "gene_symbol"])
+    .size()
+    .unstack(fill_value=0)
+)
+carrier_pivot = (carrier_pivot > 0).astype(int).reset_index()
+gene_cols = [c for c in carrier_pivot.columns if c != "person_id"]
+
+# Merge with cohort — non-carriers get 0
+feature_matrix = feature_matrix.merge(
+    carrier_pivot, on="person_id", how="left"
+)
+feature_matrix[gene_cols] = (
+    feature_matrix[gene_cols].fillna(0).astype(float)
+)
+
+print(f"Carriers: {feature_matrix[gene_cols].any(axis=1).sum()}")
+print(f"Non-carriers: {(~feature_matrix[gene_cols].any(axis=1)).sum()}")
+```
+
+!!! pitfall "all covariates must be float for statsmodels"
+    If you use `int` or pandas nullable `Int64` dtype, statsmodels may raise
+    `TypeError` or silently produce wrong results. Cast everything to `float`
+    before fitting.
+
 
 ### Sparse matrix format
 
@@ -238,7 +286,13 @@ shap.summary_plot(shap_values, X_test, max_display=20)
 ```
 
 !!! pitfall "one feature dominating the SHAP summary plot usually indicates target leakage"
-    If a single feature absorbs nearly all SHAP importance, it is likely a proxy for the label (e.g., a cancer-staging lab included in a cancer-prediction model). Test by removing the dominant feature and retraining: if AUC drops dramatically, the feature was doing all the work and your other features are uninformative. If AUC barely changes, the feature was redundant. Either way, investigate the clinical relationship between the dominant feature and the target before publishing results.
+    If a single feature absorbs nearly all SHAP importance, it is likely a
+    proxy for the label (e.g., a cancer-staging lab included in a cancer-
+    prediction model). Test by removing the dominant feature and retraining:
+    if AUC drops dramatically, the feature was doing all the work and your
+    other features are uninformative. If AUC barely changes, the feature was
+    redundant. Either way, investigate the clinical relationship between the
+    dominant feature and the target before publishing results.
 
 
 ## Troubleshooting

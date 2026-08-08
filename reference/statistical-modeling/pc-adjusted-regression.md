@@ -220,6 +220,39 @@ When to use Firth:
 - Carrier count < 20 in either outcome category
 - Standard logit warns about "Perfect separation" or fails to converge
 
+### Handle sex-specific cancers
+
+For cancers where one sex dominates (e.g., ovarian ~98% female, prostate ~1% female), the `sex_male` covariate has near-zero variance and causes a singular matrix error. Drop it:
+
+```python
+if cancer_type in ("Ovarian", "Prostate"):
+    use_covars = [c for c in covariates if c != "sex_male"]
+else:
+    use_covars = covariates
+
+X = sm.add_constant(reg_df[use_covars].astype(float))
+result = sm.Logit(y, X).fit(disp=False)
+```
+
+> **Pitfall — `sex_male` causes `LinAlgError` for sex-specific cancers.** When nearly all participants in a cancer group share the same sex, the `sex_male` column is nearly constant. The model matrix becomes singular. Always check for near-zero-variance covariates and drop them before fitting.
+
+### Collapse race categories for regression stability
+
+If using race dummies instead of PCs (only when PCs are unavailable), collapse the 11 AoU race categories to 4 to avoid sparse categories that cause convergence failures:
+
+```python
+df["race_black"] = (df["race"] == "Black or African American").astype(float)
+df["race_asian"] = (df["race"] == "Asian").astype(float)
+df["race_other"] = (
+    ~df["race"].isin(["White", "Black or African American", "Asian"])
+).astype(float)
+# White is the reference category (dropped)
+
+race_covars = ["age", "sex_male", "race_black", "race_asian", "race_other"]
+```
+
+> **Pitfall — too many race dummy columns cause convergence failures.** Using `pd.get_dummies(df["race"])` on 11 categories creates sparse columns (e.g., "Native Hawaiian" with 59 participants) that prevent the model from converging. Collapse to 4 clean categories. But prefer PCs over race dummies whenever possible — PCs capture continuous admixture that race categories miss.
+
 ### Interaction model: carrier x ancestry
 
 Test whether the genetic effect varies by ancestry background:
@@ -247,7 +280,7 @@ if p_interaction < 0.05:
 | Symptom | Cause |
 |---|---|
 | `PerfectSeparationError` or `PerfectSeparationWarning` | A covariate perfectly predicts the outcome. Usually caused by very low carrier counts. Use Firth's method (see Variation above). |
-| `LinAlgError: Singular matrix` | Perfect multicollinearity among covariates. Check for duplicate columns or both race and PCs included. |
+| `LinAlgError: Singular matrix` | Perfect multicollinearity among covariates. Check for: (1) duplicate columns, (2) both race and PCs included, (3) `sex_male` in a sex-specific cancer analysis. |
 | `ConvergenceWarning: Maximum number of iterations reached` | Increase `maxiter`: `model.fit(maxiter=1000, disp=False)`. If still fails, check for separation. |
 
 ## Cost note

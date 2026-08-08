@@ -48,10 +48,13 @@ extra_css:
 nav:
   - Home: index.md
   - Reference:
+    - Environment:
+      - Choose compute environment: reference/environment/choose-compute-environment.md
     - Cohort Definition:
       - Define case cohort by condition: reference/cohort-definition/define-case-cohort-by-condition.md
       - Build matched controls: reference/cohort-definition/build-matched-controls.md
       - Exclude by condition history: reference/cohort-definition/exclude-by-condition-history.md
+      - Discover OMOP concepts: reference/cohort-definition/discover-omop-concepts.md
     - Demographics & Ancestry:
       - Extract demographic features: reference/demographics-ancestry/extract-demographic-features.md
       - Compute ancestry PCs: reference/demographics-ancestry/compute-ancestry-pcs.md
@@ -69,6 +72,7 @@ nav:
       - Query carrier status: reference/genomics/query-carrier-status.md
       - Filter ClinVar P/LP: reference/genomics/filter-clinvar-plp.md
       - Discover genomics tables: reference/genomics/discover-genomics-tables.md
+      - Integrate AlphaMissense: reference/genomics/integrate-alphamissense.md
     - Cost Awareness:
       - Dry-run a query: reference/cost-awareness/dry-run-query.md
       - Cap query cost: reference/cost-awareness/cap-query-cost.md
@@ -84,6 +88,7 @@ nav:
     - Statistical Modeling:
       - Build SHAP feature matrix: reference/statistical-modeling/build-shap-feature-matrix.md
       - PC-adjusted regression: reference/statistical-modeling/pc-adjusted-regression.md
+      - Propensity score matching: reference/statistical-modeling/propensity-score-matching.md
   - Guides:
     - Build genomic case-control cohort: guides/build-genomic-case-control-cohort.md
     - Add windowed lab feature: guides/add-windowed-lab-feature.md

@@ -23,6 +23,12 @@ between steps.
 
 ## Reference
 
+### Environment
+
+- [Choose the right compute environment](reference/environment/choose-compute-environment.md)
+  — Jupyter vs Dataproc/Hail, CDR config, Dataproc file persistence,
+  sklearn alternatives.
+
 ### Cohort Definition
 
 - [Define a case cohort by condition codes](reference/cohort-definition/define-case-cohort-by-condition.md)
@@ -33,6 +39,8 @@ between steps.
   participants.
 - [Exclude participants by condition history](reference/cohort-definition/exclude-by-condition-history.md)
   — Remove participants with prior diagnoses using date-aware anti-joins.
+- [Discover OMOP concepts by name or hierarchy](reference/cohort-definition/discover-omop-concepts.md)
+  — Find concept IDs by searching names, expanding via concept_ancestor.
 
 ### Demographics & Ancestry
 
@@ -75,6 +83,8 @@ between steps.
 - [Discover genomics table schemas](reference/genomics/discover-genomics-tables.md)
   — INFORMATION_SCHEMA queries to verify table/column names across CDR
   versions.
+- [Integrate AlphaMissense scores](reference/genomics/integrate-alphamissense.md)
+  — Match AoU variants to AlphaMissense pathogenicity predictions.
 
 ### Cost Awareness
 
@@ -113,6 +123,8 @@ between steps.
   — Wide-format matrix assembly with leakage and encoding guardrails.
 - [Run PC-adjusted logistic regression](reference/statistical-modeling/pc-adjusted-regression.md)
   — Logistic regression with ancestry PCs as covariates.
+- [Run propensity score matching](reference/statistical-modeling/propensity-score-matching.md)
+  — 1:N PSM with statsmodels and cKDTree (no sklearn needed).
 
 ---
 
@@ -162,5 +174,5 @@ lives on the linked Reference pages.
 
 ---
 
-*23 Reference pages · 4 Guides · Phases 1–3 complete · Built from AoU
-domain knowledge, to be validated against project CDR.*
+*27 Reference pages · 4 Guides · Validated against Pan-Cancer Germline
+Predisposition Project cookbook (CDR v8, August 2026).*

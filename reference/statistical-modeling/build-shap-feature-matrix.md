@@ -174,6 +174,34 @@ print(f"NaN columns (>50% missing): "
 
 ## Variations
 
+### Add per-gene carrier columns from variant data
+
+Convert variant-level carrier data (from [Query carrier status](../genomics/query-carrier-status.md)) into binary per-gene columns:
+
+```python
+# carriers_df has columns: person_id, gene_symbol, vid
+carrier_pivot = (
+    carriers_df.groupby(["person_id", "gene_symbol"])
+    .size()
+    .unstack(fill_value=0)
+)
+carrier_pivot = (carrier_pivot > 0).astype(int).reset_index()
+gene_cols = [c for c in carrier_pivot.columns if c != "person_id"]
+
+# Merge with cohort — non-carriers get 0
+feature_matrix = feature_matrix.merge(
+    carrier_pivot, on="person_id", how="left"
+)
+feature_matrix[gene_cols] = (
+    feature_matrix[gene_cols].fillna(0).astype(float)
+)
+
+print(f"Carriers: {feature_matrix[gene_cols].any(axis=1).sum()}")
+print(f"Non-carriers: {(~feature_matrix[gene_cols].any(axis=1)).sum()}")
+```
+
+> **Pitfall — all covariates must be float for statsmodels.** If you use `int` or pandas nullable `Int64` dtype, statsmodels may raise `TypeError` or silently produce wrong results. Cast everything to `float` before fitting.
+
 ### Sparse matrix format
 
 For high-dimensional feature matrices (e.g., all condition concepts), sparse format saves memory:

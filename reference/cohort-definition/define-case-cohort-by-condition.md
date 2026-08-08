@@ -212,7 +212,10 @@ This approach should be the exception, not the default. The standard concept pat
 
 ---
 
+> **Pitfall — secondary cancer concepts name the DESTINATION site, not the origin.** "Secondary malignant neoplasm of lung" (OMOP 36714927) means a metastasis found IN the lung — it says nothing about where the primary cancer was. A breast cancer patient with lung metastases will also have a "malignant neoplasm of lung" code, and could be pulled into a Lung primary cohort. When building cancer cohorts, either exclude secondary neoplasm concepts (ancestor 432851) or cross-reference against each patient's primary diagnosis to avoid contamination.
+
 ## See also
 
 - [Build matched controls for a case cohort](build-matched-controls.md) — find age/sex-matched controls for the cohort defined here
 - [Exclude participants by condition history](exclude-by-condition-history.md) — remove participants with prior diagnoses from a study cohort
+- [Discover OMOP concepts by name or hierarchy](discover-omop-concepts.md) — find concept IDs by searching names and expanding hierarchies

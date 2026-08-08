@@ -313,6 +313,8 @@ concurrent_df = client.query(concurrent_query).to_dataframe()
 
 ---
 
+> **Pitfall — drugs with dual indications contaminate cohorts in general biobanks.** Bone-modifying agents are a key example: denosumab is sold as Xgeva (120 mg, oncology) AND Prolia (60 mg, osteoporosis); zoledronic acid is Zometa (4 mg, oncology) AND Reclast (5 mg, osteoporosis). In All of Us (a general population biobank), ~80% of patients on these drugs have osteoporosis, not cancer. Using drug exposure alone as a cancer treatment proxy is unreliable — always cross-reference against a confirmed cancer diagnosis.
+
 ## Troubleshooting
 
 | Symptom | Cause |

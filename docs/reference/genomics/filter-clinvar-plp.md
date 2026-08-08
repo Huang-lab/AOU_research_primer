@@ -212,6 +212,32 @@ tiered = client.query(tiered_sql).to_dataframe()
 print(tiered["significance_tier"].value_counts())
 ```
 
+### Extract unclassified loss-of-function variants
+
+Variants that ClinVar has not reviewed but are obviously damaging by consequence type. These complement P/LP carriers for genes where ClinVar coverage is incomplete:
+
+```python
+lof_unclassified_sql = f"""
+SELECT DISTINCT person_id
+FROM `{CDR}.cb_variant_to_person`, UNNEST(person_ids) AS person_id
+WHERE vid IN (
+    SELECT va.vid
+    FROM `{CDR}.cb_variant_attribute` va
+    JOIN `{CDR}.cb_variant_attribute_genes` vag ON va.vid = vag.vid
+    WHERE vag.gene_symbol = 'MUTYH'
+    AND (va.cons_str LIKE '%frameshift%'
+         OR va.cons_str LIKE '%stop_gained%'
+         OR va.cons_str LIKE '%splice_donor%'
+         OR va.cons_str LIKE '%splice_acceptor%')
+    AND (va.clinical_significance_string NOT LIKE '%athogenic%'
+         OR va.clinical_significance_string IS NULL
+         OR va.clinical_significance_string = '')
+)
+"""
+```
+
+The final `AND` clause ensures you only pick up variants not already captured by a P/LP filter — avoiding double-counting when you union P/LP + unclassified LoF carriers.
+
 ### Case-insensitive matching with LOWER()
 
 If you are uncertain about capitalization conventions across CDR versions:

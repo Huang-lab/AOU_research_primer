@@ -185,26 +185,70 @@ for ancestry in pc_expanded["ancestry_pred"].unique():
     # Run ancestry-specific analysis on subset
 ```
 
-### 2. Diagnostic: how many PCs to include
+### 2. Load PCs from GCS file (alternative to BigQuery)
+
+If you need the raw ancestry predictions file (e.g., for Hail pipelines or to access fields not in `prep_ancestry`), download from the controlled-tier GCS bucket. This requires a **Dataproc/Hail cluster** (not regular Jupyter) — see [Choose the right compute environment](../environment/choose-compute-environment.md).
+
+!!! warning "GCS bucket path changed in Workbench 2.0"
+    The old path `gs://fc-aou-datasets-controlled/...` no longer works. Use
+    the `vwb-` prefix. The filename also changed to
+    `echo_v4_r2.ancestry_preds.tsv`.
+
 
 ```python
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import log_loss
+import subprocess
+
+cmd = (
+    "gsutil -u $GOOGLE_PROJECT cp "
+    "gs://vwb-aou-datasets-controlled/v8/wgs/short_read/snpindel/"
+    "aux/ancestry/echo_v4_r2.ancestry_preds.tsv "
+    "/tmp/ancestry_preds.tsv"
+)
+result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)
+print(result.stdout or result.stderr)
+```
+
+```python
+import pandas as pd
+import ast
+
+df_anc = pd.read_csv("/tmp/ancestry_preds.tsv", sep="\t")
+# Columns: research_id, ancestry_pred, probabilities, pca_features, ancestry_pred_other
+
+pc_data = df_anc["pca_features"].apply(ast.literal_eval)
+pc_df = pd.DataFrame(pc_data.tolist(), columns=[f"PC{i+1}" for i in range(16)])
+pc_df["person_id"] = df_anc["research_id"].values
+pc_df["ancestry_pred"] = df_anc["ancestry_pred"].values
+```
+
+!!! pitfall "the GCS file uses `research_id`, not `person_id`"
+    The column name in the TSV is `research_id` but it contains the same
+    values as `person_id` in BigQuery tables. Rename before merging.
+
+
+### 3. Diagnostic: how many PCs to include
+
+!!! note ""
+    scikit-learn is broken in Dataproc/Hail environments. The version below
+    uses statsmodels instead.
+
+
+```python
+import statsmodels.api as sm
 import numpy as np
+import matplotlib.pyplot as plt
 
 losses = []
 for n_pcs in range(1, 21):
     cols = [f"PC{i+1}" for i in range(n_pcs)]
-    X = cohort_with_pcs[cols].values
+    X = sm.add_constant(cohort_with_pcs[cols].values)
     y = cohort_with_pcs["case"].values
-    lr = LogisticRegression(max_iter=1000).fit(X, y)
-    losses.append(log_loss(y, lr.predict_proba(X)))
+    model = sm.Logit(y, X).fit(disp=0)
+    losses.append(-model.llf)  # negative log-likelihood
 
-# Plot to find the elbow
-import matplotlib.pyplot as plt
 plt.plot(range(1, 21), losses, marker="o")
 plt.xlabel("Number of PCs")
-plt.ylabel("Log-loss")
+plt.ylabel("Negative log-likelihood")
 plt.title("Elbow plot for PC selection")
 plt.show()
 ```

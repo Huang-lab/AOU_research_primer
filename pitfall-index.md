@@ -1,6 +1,6 @@
 # Pitfall Index
 
-Every **Pitfall** callout from the 23 Reference pages, grouped by failure
+Every **Pitfall** callout from the 27 Reference pages, grouped by failure
 mode. Use this as a pre-submission checklist: scan each category before
 running a final analysis to confirm you have not fallen into a
 silent-wrong-answer trap.
@@ -177,6 +177,20 @@ code fix, and context live.
   NULLs.
   [Source](reference/surveys/query-survey-responses.md)
 
+- **Only standard concepts (`standard_concept = 'S'`) match clinical records.**
+  Source vocabularies (ICD10CM, ICD9CM) in the concept table return zero
+  patients when used in `WHERE condition_concept_id = ...`.
+  [Source](reference/cohort-definition/discover-omop-concepts.md)
+
+- **Secondary cancer concepts name the DESTINATION, not the origin.**
+  "Secondary malignant neoplasm of lung" = metastasis IN the lung. A
+  breast cancer patient with lung mets may contaminate a lung primary cohort.
+  [Source](reference/cohort-definition/define-case-cohort-by-condition.md)
+
+- **AlphaMissense uses `chr1` format; AoU uses bare `1`.**
+  Coordinate mismatch when matching variants. Strip `chr` prefix or add it.
+  [Source](reference/genomics/integrate-alphamissense.md)
+
 ---
 
 ## Unit / encoding errors
@@ -280,3 +294,43 @@ code fix, and context live.
   Many records have imputed or NULL end dates. Use `days_supply` or
   define duration from dispensing logic.
   [Source](reference/medications/query-drug-exposures.md)
+
+- **Drugs with dual indications contaminate cohorts in general biobanks.**
+  Denosumab = Xgeva (oncology) AND Prolia (osteoporosis). ~80% of drug-
+  only patients in AoU have osteoporosis, not cancer.
+  [Source](reference/medications/query-drug-exposures.md)
+
+- **Hardcoded paths break across compute environments.**
+  `/home/jupyter/` paths fail on Dataproc (`/home/dataproc/`). Use
+  `os.getcwd()` or relative paths.
+  [Source](reference/environment/choose-compute-environment.md)
+
+- **`WORKSPACE_CDR` is None in Dataproc environments.**
+  Queries using `os.environ["WORKSPACE_CDR"]` raise `KeyError`. Set
+  CDR string manually.
+  [Source](reference/environment/choose-compute-environment.md)
+
+- **Dataproc files are NOT persistent.**
+  Local disk is wiped on cluster stop/destroy. Sync to GCS before
+  shutdown.
+  [Source](reference/environment/choose-compute-environment.md)
+
+- **GCS ancestry file path changed in Workbench 2.0.**
+  `gs://fc-aou-datasets-controlled` → `gs://vwb-aou-datasets-controlled`.
+  Filename is now `echo_v4_r2.ancestry_preds.tsv`.
+  [Source](reference/demographics-ancestry/compute-ancestry-pcs.md)
+
+- **`sex_male` covariate causes singular matrix for sex-specific cancers.**
+  Near-zero variance when nearly all participants share the same sex.
+  Drop `sex_male` for ovarian/prostate analyses.
+  [Source](reference/statistical-modeling/pc-adjusted-regression.md)
+
+- **Too many race dummy columns cause convergence failures.**
+  `pd.get_dummies(df['race'])` on 11 categories creates sparse columns.
+  Collapse to 4 clean categories.
+  [Source](reference/statistical-modeling/pc-adjusted-regression.md)
+
+- **All covariates must be float for statsmodels.**
+  Pandas nullable `Int64` vs numpy `int64` causes `isin()` mismatches
+  and silent failures. Cast to float before fitting.
+  [Source](reference/statistical-modeling/build-shap-feature-matrix.md)
