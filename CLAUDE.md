@@ -45,11 +45,11 @@ Every reference page follows `docs/TEMPLATE.md`:
 - Troubleshooting table
 - Links to related pages
 
-## Current state (as of Aug 2026)
+## Current state (as of 2026-08-13)
 - Validated against Pan-Cancer Germline Predisposition Project cookbook (CDR v8)
 - 4 corrections applied (ARRAY person_ids, column renames, ClinVar compound strings, ancestry coverage)
 - 18 new content items integrated from cookbook
-- Site deployed via `mkdocs gh-deploy`
+- Asgari Lab adaptation planned — targeting CDR v9 (see "Active collaboration" section below)
 
 ---
 
@@ -60,7 +60,21 @@ https://github.com/asgarilab/SDoH-GeneticRisk-Biobank-MCA
 
 **Paper**: "Integrating social determinants of health and genetic risk in disease risk models" — Biji, Ferar, Pejaver, Kenny, Liu, Asgari (AJHG 2026)
 
-**Permission status**: Huang Lab has confirmed collaboration. Asgari Lab has agreed to adaptation of their code. License to be added to their repo later.
+**Permission status**: Huang Lab has confirmed collaboration with Asgari Lab.
+
+> **Action required before publishing adapted pages:** The upstream repo
+> (`asgarilab/SDoH-GeneticRisk-Biobank-MCA`) is public with **no LICENSE file**,
+> which means all rights reserved under copyright law. A verbal agreement is
+> recorded here but is not a license grant. Before the translated reference
+> pages go live on the public site, one of the following must be in place:
+>
+> 1. **Preferred:** Asgari Lab adds a LICENSE to their repo (MIT or CC-BY-4.0).
+> 2. **Fallback:** Written permission by email — scope: "adaptation and
+>    republication of notebook logic, with attribution"; who granted it; date.
+>
+> The attribution plan (cite Biji et al. AJHG 2026 on every derived page) and
+> the out-of-scope list (MCA, SDoH elastic-net models) are correct — keep those
+> regardless of which path is taken.
 
 ### Their 10 notebooks (all R, CDR v7)
 | Notebook | Topic | Integration priority |
@@ -77,10 +91,10 @@ https://github.com/asgarilab/SDoH-GeneticRisk-Biobank-MCA
 | j | GWAS plots (Manhattan, QQ, Z-score comparison) | HIGH |
 
 ### What to do next
-Translate their R notebooks to Python, validate on AoU Workbench (CDR v8), and write new reference pages. Each page should have both R and Python code.
+Translate their R notebooks to Python, validate on AoU Workbench (CDR v9), and write new reference pages. Each page should have both R and Python code.
 
 **Key adaptations needed when translating:**
-- CDR v7 → v8: paths, column names, GCS bucket (`fc-aou-datasets-controlled` → `vwb-aou-datasets-controlled`)
+- CDR v7 → v9: paths, column names, GCS bucket (`fc-aou-datasets-controlled` → `vwb-aou-datasets-controlled`)
 - R BigQuery (`bigrquery`) → Python (`google.cloud.bigquery` or pandas-gbq)
 - R data wrangling (`tidyverse`) → Python (`pandas`)
 - R plotting (`ggplot2`) → Python (`matplotlib`/`seaborn`)
@@ -104,10 +118,12 @@ Translate their R notebooks to Python, validate on AoU Workbench (CDR v8), and w
 ```bash
 # Local preview
 mkdocs serve
-
-# Deploy to GitHub Pages
-mkdocs gh-deploy
 ```
+
+**Deploying:** Push to `main`. The CI workflow (`.github/workflows/pages.yml`) builds
+with `mkdocs build --strict` and deploys via GitHub Actions Pages. Do **not** use
+`mkdocs gh-deploy` — that pushes to a `gh-pages` branch which is not what serves the
+site. The `--strict` flag in CI catches broken internal links and bad nav entries.
 
 ## Style rules
 - No lorem ipsum — real AoU examples only
