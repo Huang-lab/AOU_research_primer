@@ -1,0 +1,14 @@
+* text=auto eol=lf
+
+*.sh   text eol=lf
+*.py   text diff=python
+*.md   text diff=markdown
+
+*.png  binary
+*.jpg  binary
+*.pdf  binary
+*.gz   binary
+*.rds  binary
+*.parquet binary
+
+*.ipynb linguist-generated=true
