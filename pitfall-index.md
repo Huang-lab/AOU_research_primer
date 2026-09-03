@@ -277,6 +277,20 @@ code fix, and context live.
   `try/except`.
   [Source](reference/cost-awareness/cap-query-cost.md)
 
+- **Dataproc clusters have NO autostop.**
+  Unlike Jupyter environments, Dataproc clusters do not auto-pause or
+  auto-stop when idle. A forgotten cluster at $0.12/hr (minimum) or
+  $0.73/hr (with workers) burns credits continuously. Delete the cluster
+  manually after each session.
+  [Source](reference/cost-awareness/optimize-compute-costs.md)
+
+- **`WORKSPACE_CDR` is None in Dataproc, producing a confusing 403.**
+  `os.environ.get("WORKSPACE_CDR")` returns `None` in Dataproc, which
+  produces queries against `None.table_name`. BigQuery returns `403
+  Forbidden` instead of a clear error. Always provide a manual fallback
+  string and print the CDR value before running queries.
+  [Source](reference/cost-awareness/optimize-compute-costs.md)
+
 ---
 
 ## Other
