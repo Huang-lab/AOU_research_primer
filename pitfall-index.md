@@ -284,6 +284,14 @@ code fix, and context live.
   manually after each session.
   [Source](reference/cost-awareness/optimize-compute-costs.md)
 
+- **Initial credits expire on a clock, and expiry deletes your data.**
+  The $300 grant expires 365 days after you sign the Data User Code of
+  Conduct, spent or not. At the recommended $0.12/hr configuration a year
+  of 4 hrs/day draws only $113, so $187 is forfeited — and on expiry
+  workspace buckets and persistent disks are **deleted**, not just frozen.
+  Export before the date and link institutional billing ahead of it.
+  [Source](reference/cost-awareness/optimize-compute-costs.md)
+
 - **`WORKSPACE_CDR` is None in Dataproc, producing a confusing 403.**
   `os.environ.get("WORKSPACE_CDR")` returns `None` in Dataproc, which
   produces queries against `None.table_name`. BigQuery returns `403
