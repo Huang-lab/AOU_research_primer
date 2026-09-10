@@ -22,7 +22,10 @@ where:
 - **Dataproc premium** — `$0.01 × total vCPUs × hours` (only for Dataproc clusters)
 - **Disk cost** — `$0.04/GB/month` for standard persistent disk (~$0.000055/GB/hr)
 
-**Initial credits:** $300 per researcher, expire 120 days after registration.
+**Initial credits:** $300 per researcher, expiring **365 days** after you sign the Data
+User Code of Conduct ([policy change effective 2025-02-18](https://support.researchallofus.org/hc/en-us/articles/37568567328788-Updates-to-All-of-Us-initial-credits-expirations-updated-to-365-days)).
+For most usage patterns the clock, not the balance, is what runs out first — see
+[Budget against the expiry clock](#budget-against-the-expiry-clock) below.
 
 ### VM pricing (us-central1)
 
@@ -165,9 +168,34 @@ When multiple researchers share a workspace for coordinated analysis:
 | Genomic flags all 0 | You are on the Registered Tier. Controlled Tier is required for genomic data (WGS, variants, carrier status). |
 | Credits draining faster than expected | Check for an idle Dataproc cluster. Go to Workbench → Cloud Environments and delete any clusters not in active use. |
 
+### Budget against the expiry clock
+
+Credits expire 365 days after you sign the Data User Code of Conduct, whether or not you
+have spent them. Two consequences that change how you should choose a machine:
+
+**Below roughly 10 hours per working day, the expiry clock binds before the balance does.**
+Downsizing the VM then saves nothing — it only increases the amount forfeited. If you have a
+deadline, size *up* to finish sooner rather than down to reduce the hourly rate. The cheap
+configuration is the right default for *idle* risk (a forgotten cluster), not for throughput.
+
+| Usage | Spend in 365 days (at $0.12/hr) | Unspent at expiry |
+|---|---|---|
+| 2 hrs/day, 20 days/month | $57 | $243 |
+| 4 hrs/day, 20 days/month | $113 | $187 |
+| 8 hrs/day, 20 days/month | $226 | $74 |
+| 10.6 hrs/day, 20 days/month | $300 | $0 |
+
+!!! pitfall "Expiry deletes your data, not just your credits"
+    When initial credits are exhausted *or* reach their expiration date, you can no longer launch
+    or access analysis environments, and **workspace buckets and persistent disks are deleted**.
+    Export anything you need to keep before the date, and link an institutional billing account
+    ahead of it if the work is continuing. This is a data-loss deadline, not only a budget one.
+
 ## Cost note
 
-The compute environment itself is the largest cost driver in the Workbench — larger than BigQuery for most researchers. The recommended single-node Dataproc at $0.12/hr makes $300 in credits last over 2 years of regular use (4 hrs/day, 20 days/month). The #1 way to waste credits is forgetting to delete a Dataproc cluster.
+The compute environment itself is the largest cost driver in the Workbench — larger than BigQuery for most researchers. The #1 way to waste credits is forgetting to delete a Dataproc cluster.
+
+But at the recommended rate the credits **expire before they are spent**: $0.12/hr at 4 hrs/day, 20 days/month is $9.42/month, so a year of that usage draws $113 of the $300 and the remaining **$187 is forfeited**. Spending the full grant inside 365 days takes about **10.6 hours per working day** on that configuration.
 
 ## See also
 
