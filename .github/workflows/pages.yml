@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - main
+  # Build on pull requests too, so the check that gates a PR is the same job
+  # that will run on main. The previous split had a separate ci.yml running
+  # `mkdocs build --strict` with `checkout` and `setup-python` and nothing
+  # else, so a PR touching `configure-pages`, `upload-pages-artifact` or
+  # `deploy-pages` got a green tick from a job that used none of them.
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -12,7 +18,11 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  # Per-ref, not a single global `pages` group. Now that pull requests build
+  # too, a shared group would let a PR's build cancel an in-flight deploy of
+  # main. Only pushes to main reach the deploy job, and they all share
+  # `pages-refs/heads/main`, so deploys stay serialised as before.
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -44,6 +54,9 @@ jobs:
           path: site
 
   deploy:
+    # Build on every pull request, publish only from main. A PR gets the whole
+    # build path exercised and touches nothing live.
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
