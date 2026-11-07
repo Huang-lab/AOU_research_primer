@@ -198,16 +198,29 @@ print(f"Combined cohort: {len(cohort_df)}")
 Require minimum observation time before index date to ensure that absent records
 reflect genuine absence, not missing data.
 
+`cohort_df` lives in the notebook, not in BigQuery, so the query cannot join to it.
+Pass the cohort's `person_id`s as an array parameter and compare dates in pandas.
+
 ```python
 min_obs_days = 365
 
-obs_filter_sql = f"""
-SELECT person_id
-FROM `{CDR}.observation_period` op
-JOIN cohort c ON op.person_id = c.person_id
-WHERE DATE_DIFF(c.index_date, op.observation_period_start_date, DAY) >= {min_obs_days}
+obs_sql = f"""
+SELECT person_id, observation_period_start_date
+FROM `{CDR}.observation_period`
+WHERE person_id IN UNNEST(@person_ids)
 """
-obs_eligible = client.query(obs_filter_sql).to_dataframe()
+obs_config = bigquery.QueryJobConfig(
+    query_parameters=[bigquery.ArrayQueryParameter(
+        "person_ids", "INT64", [int(p) for p in cohort_df["person_id"]])],
+    maximum_bytes_billed=1 * 1024**3,  # observation_period is small
+)
+obs = client.query(obs_sql, job_config=obs_config).to_dataframe()
+
+# Compare each period's start with the person's index date in pandas
+obs = obs.merge(cohort_df[["person_id", "index_date"]], on="person_id")
+lookback_days = (pd.to_datetime(obs["index_date"])
+                 - pd.to_datetime(obs["observation_period_start_date"])).dt.days
+obs_eligible = obs.loc[lookback_days >= min_obs_days, ["person_id"]].drop_duplicates()
 cohort_df = cohort_df[cohort_df["person_id"].isin(obs_eligible["person_id"])]
 ```
 
