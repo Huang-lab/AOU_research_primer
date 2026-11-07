@@ -94,14 +94,16 @@ dry_run_job = client.query(query, job_config=job_config)
 
 bytes_estimate = dry_run_job.total_bytes_processed
 gb_estimate = bytes_estimate / (1024 ** 3)
-tb_estimate = bytes_estimate / (1024 ** 4)
+tib_estimate = bytes_estimate / (1024 ** 4)
 
-# BigQuery on-demand pricing: $6.25 per TB (as of 2024; verify current pricing)
-cost_per_tb = 6.25
-cost_estimate = tb_estimate * cost_per_tb
+# BigQuery on-demand pricing: $6.25 per TiB, first 1 TiB per month free
+# (https://cloud.google.com/bigquery/pricing, checked 2026-11-07).
+# This estimate ignores the free tier.
+price_per_tib = 6.25
+cost_estimate = tib_estimate * price_per_tib
 
 print(f"Estimated bytes scanned: {bytes_estimate:,}")
-print(f"Estimated size: {gb_estimate:.2f} GB ({tb_estimate:.4f} TB)")
+print(f"Estimated size: {gb_estimate:.2f} GB ({tib_estimate:.4f} TiB)")
 print(f"Estimated cost: ${cost_estimate:.2f}")
 ```
 
@@ -245,7 +247,7 @@ After optimizing, **re-run the dry-run** (Step 2) to confirm the savings:
 ```python
 # Re-estimate with the optimized query
 dry_run_job = client.query(query_v2, job_config=job_config)
-new_estimate = dry_run_job.total_bytes_processed / (1024 ** 4) * cost_per_tb
+new_estimate = dry_run_job.total_bytes_processed / (1024 ** 4) * price_per_tib
 print(f"Optimized cost estimate: ${new_estimate:.2f} "
       f"(was ${cost_estimate:.2f})")
 ```
@@ -269,7 +271,7 @@ job_config = bigquery.QueryJobConfig(
     maximum_bytes_billed=cap_bytes,
 )
 print(f"Cost cap set: {cap_bytes / (1024 ** 3):.2f} GB "
-      f"(${cap_bytes / (1024 ** 4) * cost_per_tb:.2f})")
+      f"(${cap_bytes / (1024 ** 4) * price_per_tib:.2f})")
 ```
 
 **Why set a cap when you already have an estimate?** Two reasons:
@@ -317,7 +319,7 @@ ground truth for future estimates.
 ```python
 actual_bytes = query_job.total_bytes_billed
 actual_gb = actual_bytes / (1024 ** 3)
-actual_cost = (actual_bytes / (1024 ** 4)) * cost_per_tb
+actual_cost = (actual_bytes / (1024 ** 4)) * price_per_tib
 
 print(f"Actual bytes billed: {actual_bytes:,}")
 print(f"Actual size: {actual_gb:.2f} GB")

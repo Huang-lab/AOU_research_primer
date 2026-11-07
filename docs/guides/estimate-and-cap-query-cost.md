@@ -94,14 +94,16 @@ dry_run_job = client.query(query, job_config=job_config)
 
 bytes_estimate = dry_run_job.total_bytes_processed
 gb_estimate = bytes_estimate / (1024 ** 3)
-tb_estimate = bytes_estimate / (1024 ** 4)
+tib_estimate = bytes_estimate / (1024 ** 4)
 
-# BigQuery on-demand pricing: $6.25 per TB (as of 2024; verify current pricing)
-cost_per_tb = 6.25
-cost_estimate = tb_estimate * cost_per_tb
+# BigQuery on-demand pricing: $6.25 per TiB, first 1 TiB per month free
+# (https://cloud.google.com/bigquery/pricing, checked 2026-11-07).
+# This estimate ignores the free tier.
+price_per_tib = 6.25
+cost_estimate = tib_estimate * price_per_tib
 
 print(f"Estimated bytes scanned: {bytes_estimate:,}")
-print(f"Estimated size: {gb_estimate:.2f} GB ({tb_estimate:.4f} TB)")
+print(f"Estimated size: {gb_estimate:.2f} GB ({tib_estimate:.4f} TiB)")
 print(f"Estimated cost: ${cost_estimate:.2f}")
 ```
 
@@ -109,7 +111,27 @@ The dry-run returns instantly and costs nothing. There is no reason not to
 run it before every expensive query.
 
 !!! pitfall "Dry-running a simplified version of your query"
-    The most common mistake is running the dry-run on a version of the query that differs from the actual query. Three specific traps:  - **Adding `LIMIT`:** `LIMIT 100` does not reduce bytes scanned in BigQuery.   BigQuery scans the full columns referenced in the query and then truncates   the output. The dry-run of `SELECT * FROM big_table LIMIT 10` reports the   same bytes as `SELECT * FROM big_table`. This is correct -- that is how   much the query will scan. But people add `LIMIT` thinking it will make   the query cheaper, then are surprised when the full query costs the same.  - **Removing columns:** If you dry-run `SELECT person_id FROM table` but   execute `SELECT person_id, variant_id, gene_symbol, ... FROM table`, the   estimate will be lower than the actual cost because BigQuery is columnar --   fewer columns means fewer bytes scanned.  - **Adding filters:** If you dry-run with an extra `WHERE` clause that you   later remove, the estimate may be lower (though BigQuery's pruning depends   on whether the filter maps to partition/cluster keys).  **Rule:** The dry-run query must be character-for-character identical to the query you will execute.
+    The most common mistake is running the dry-run on a version of the query
+    that differs from the actual query. Three specific traps:
+
+    - **Adding `LIMIT`:** `LIMIT 100` does not reduce bytes scanned in BigQuery.
+      BigQuery scans the full columns referenced in the query and then truncates
+      the output. The dry-run of `SELECT * FROM big_table LIMIT 10` reports the
+      same bytes as `SELECT * FROM big_table`. This is correct -- that is how
+      much the query will scan. But people add `LIMIT` thinking it will make
+      the query cheaper, then are surprised when the full query costs the same.
+
+    - **Removing columns:** If you dry-run `SELECT person_id FROM table` but
+      execute `SELECT person_id, variant_id, gene_symbol, ... FROM table`, the
+      estimate will be lower than the actual cost because BigQuery is columnar --
+      fewer columns means fewer bytes scanned.
+
+    - **Adding filters:** If you dry-run with an extra `WHERE` clause that you
+      later remove, the estimate may be lower (though BigQuery's pruning depends
+      on whether the filter maps to partition/cluster keys).
+
+    **Rule:** The dry-run query must be character-for-character identical to the
+    query you will execute.
 
 
 ---
@@ -226,7 +248,7 @@ After optimizing, **re-run the dry-run** (Step 2) to confirm the savings:
 ```python
 # Re-estimate with the optimized query
 dry_run_job = client.query(query_v2, job_config=job_config)
-new_estimate = dry_run_job.total_bytes_processed / (1024 ** 4) * cost_per_tb
+new_estimate = dry_run_job.total_bytes_processed / (1024 ** 4) * price_per_tib
 print(f"Optimized cost estimate: ${new_estimate:.2f} "
       f"(was ${cost_estimate:.2f})")
 ```
@@ -250,7 +272,7 @@ job_config = bigquery.QueryJobConfig(
     maximum_bytes_billed=cap_bytes,
 )
 print(f"Cost cap set: {cap_bytes / (1024 ** 3):.2f} GB "
-      f"(${cap_bytes / (1024 ** 4) * cost_per_tb:.2f})")
+      f"(${cap_bytes / (1024 ** 4) * price_per_tib:.2f})")
 ```
 
 **Why set a cap when you already have an estimate?** Two reasons:
@@ -298,7 +320,7 @@ ground truth for future estimates.
 ```python
 actual_bytes = query_job.total_bytes_billed
 actual_gb = actual_bytes / (1024 ** 3)
-actual_cost = (actual_bytes / (1024 ** 4)) * cost_per_tb
+actual_cost = (actual_bytes / (1024 ** 4)) * price_per_tib
 
 print(f"Actual bytes billed: {actual_bytes:,}")
 print(f"Actual size: {actual_gb:.2f} GB")
