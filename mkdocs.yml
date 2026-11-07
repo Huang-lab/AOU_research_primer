@@ -74,6 +74,7 @@ nav:
       - Discover genomics tables: reference/genomics/discover-genomics-tables.md
       - Integrate AlphaMissense: reference/genomics/integrate-alphamissense.md
     - Cost Awareness:
+      - Optimize compute costs: reference/cost-awareness/optimize-compute-costs.md
       - Dry-run a query: reference/cost-awareness/dry-run-query.md
       - Cap query cost: reference/cost-awareness/cap-query-cost.md
     - Surveys:

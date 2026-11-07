@@ -90,6 +90,9 @@ between steps.
 
 ### Cost Awareness
 
+- [Optimize compute environment costs](reference/cost-awareness/optimize-compute-costs.md)
+  — Cheapest VM and Dataproc configurations by workload, with idle-cluster
+  warnings and team setups.
 - [Dry-run a query to estimate cost](reference/cost-awareness/dry-run-query.md)
   — Estimate bytes processed without execution.
 - [Cap query cost before execution](reference/cost-awareness/cap-query-cost.md)
@@ -176,5 +179,5 @@ lives on the linked Reference pages.
 
 ---
 
-*27 Reference pages · 4 Guides · Validated against Pan-Cancer Germline
+*28 Reference pages · 4 Guides · Validated against Pan-Cancer Germline
 Predisposition Project cookbook (CDR v8, August 2026).*
