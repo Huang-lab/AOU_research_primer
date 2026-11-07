@@ -9,6 +9,7 @@ Construct a wide-format feature matrix (one row per participant, one column per 
 - Python 3, `pandas`, `numpy`; optionally `xgboost`, `shap`
 
 **Tier:** N/A (operates on already-extracted data)
+
 **CDR versions:** All (data extraction is CDR-dependent; matrix assembly is not)
 
 ## Reference

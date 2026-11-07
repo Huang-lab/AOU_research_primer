@@ -3,7 +3,9 @@
 Choose the cheapest Workbench compute configuration for your workload, and avoid the idle-cluster trap that burns credits overnight.
 
 **You'll need:** A Researcher Workbench workspace with cloud credits
+
 **Tier:** Registered or Controlled
+
 **CDR versions validated:** C2025Q4R6
 
 ---

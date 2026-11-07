@@ -8,6 +8,7 @@ Use `INFORMATION_SCHEMA` to inspect current column names, types, and available t
 - Python 3, `google-cloud-bigquery`
 
 **Tier:** Registered (for `INFORMATION_SCHEMA` queries against the CDR dataset)
+
 **CDR versions:** All
 
 ## Reference
