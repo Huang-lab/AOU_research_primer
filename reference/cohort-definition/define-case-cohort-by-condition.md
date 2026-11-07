@@ -11,6 +11,7 @@ Query `condition_occurrence` with SNOMED standard concepts and `concept_ancestor
 | Familiarity | OMOP CDM `condition_occurrence`, `concept`, `concept_ancestor` tables |
 
 **Tier:** Registered Tier or Controlled Tier
+
 **CDR versions:** C2022Q4R9 and later
 
 ---
