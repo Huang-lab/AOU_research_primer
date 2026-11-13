@@ -9,6 +9,7 @@ Fit a logistic regression with genetic ancestry principal components (PCs) as co
 - Python 3, `pandas`, `statsmodels`, `numpy`
 
 **Tier:** Controlled (ancestry PCs require controlled-tier access)
+
 **CDR versions:** v7+ (PC column names may vary)
 
 ## Reference

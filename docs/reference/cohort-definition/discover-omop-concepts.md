@@ -8,6 +8,7 @@ Find concept IDs for conditions, drugs, or measurements by searching concept nam
 - Python 3, `google-cloud-bigquery`, `pandas`
 
 **Tier:** Registered or Controlled
+
 **CDR versions:** All
 
 ## Reference
