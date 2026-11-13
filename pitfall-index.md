@@ -1,6 +1,6 @@
 # Pitfall Index
 
-Every **Pitfall** callout from the 27 Reference pages, grouped by failure
+Every **Pitfall** callout from the 29 Reference pages, grouped by failure
 mode. Use this as a pre-submission checklist: scan each category before
 running a final analysis to confirm you have not fallen into a
 silent-wrong-answer trap.
@@ -356,3 +356,44 @@ code fix, and context live.
   Pandas nullable `Int64` vs numpy `int64` causes `isin()` mismatches
   and silent failures. Cast to float before fitting.
   [Source](reference/statistical-modeling/build-shap-feature-matrix.md)
+
+- **`prep_*` datasets are build staging, not the CDR.**
+  `prep_C2025Q4R6` sits next to `C2025Q4R6` with similar table names
+  but different contents (`prep_concept`: 100 rows vs 7.4M). Point `CDR`
+  at `C2025Q4R6`.
+  [Source](reference/environment/find-where-data-lives.md)
+
+- **`device` is Fitbit devices; medical devices are `device_exposure`.**
+  Picking `device` (23.6M rows) for EHR device exposure silently
+  analyzes wearable records instead.
+  [Source](reference/environment/find-where-data-lives.md)
+
+- **Several v9 OMOP tables are empty.**
+  `care_site`, `location`, `provider`, `cost`, `payer_plan_period` and
+  others have 0 rows, so queries return nothing without an error.
+  [Source](reference/environment/find-where-data-lives.md)
+
+- **`aou_death` counts records, not people.**
+  It has 14,435 rows against `death`'s 9,341 and can hold several
+  records per participant. Filter on `primary_death_record` or count
+  distinct `person_id`.
+  [Source](reference/environment/find-where-data-lives.md)
+
+- **Location is a masked 3-digit ZIP, and 32,136 participants have `000**`.**
+  No address, coordinates or 5-digit ZIP exist. `000**` links to no area,
+  and `zip3_ses_map.zip3` drops leading zeros, so join on the string form.
+  [Source](reference/environment/find-where-data-lives.md)
+
+- **`cb_search_person`'s genomic flags are all 0 in v9.**
+  Filtering on `has_whole_genome_variant` there returns nobody. Use the
+  index's `T_ENT_person.has_whole_genome_variant` (535,662 TRUE).
+  [Source](reference/environment/find-where-data-lives.md)
+
+- **Clinical notes are not in the CDR dataset.**
+  They are in `C_V9_R6_offcycle_nlp`; searching `C2025Q4R6` alone
+  suggests v9 has no notes.
+  [Source](reference/environment/find-where-data-lives.md)
+
+- **`wgs/cram/` and `microarray/idat/`, `microarray/vcf/` hold only a manifest.**
+  Each folder has one CSV listing where the real files are.
+  [Source](reference/environment/find-where-data-lives.md)

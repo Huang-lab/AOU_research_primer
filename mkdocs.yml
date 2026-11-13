@@ -50,6 +50,7 @@ nav:
   - Reference:
     - Environment:
       - Choose compute environment: reference/environment/choose-compute-environment.md
+      - Find where data lives (v9): reference/environment/find-where-data-lives.md
     - Cohort Definition:
       - Define case cohort by condition: reference/cohort-definition/define-case-cohort-by-condition.md
       - Build matched controls: reference/cohort-definition/build-matched-controls.md
