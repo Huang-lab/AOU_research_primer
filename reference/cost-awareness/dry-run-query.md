@@ -23,7 +23,7 @@ AoU cost reference points:
 | `measurement` | Large (50-200 GB) | Labs, vitals -- biggest OMOP table |
 | `cb_variant_to_person` | Very large (100+ GB) | Genomic carrier data |
 
-BigQuery on-demand pricing: $5 per TB scanned. The first 1 TB/month is free for most projects, but AoU workspaces may have different billing structures through the Researcher Workbench.
+BigQuery on-demand pricing: $6.25 per TiB (tebibyte, 1024 GiB) scanned, with the first 1 TiB per month free ([Google Cloud BigQuery pricing](https://cloud.google.com/bigquery/pricing), checked 2026-11-07). AoU workspaces may have different billing structures through the Researcher Workbench, so treat the free tier as a bonus rather than something to budget around.
 
 ## Usage
 
@@ -61,10 +61,10 @@ def format_bytes(n_bytes):
         n_bytes /= 1024
     return f"{n_bytes:.2f} PB"
 
-def estimate_cost_usd(n_bytes, price_per_tb=5.0):
-    """Estimate BigQuery cost in USD at on-demand pricing."""
-    tb = n_bytes / (1024**4)
-    return tb * price_per_tb
+def estimate_cost_usd(n_bytes, price_per_tib=6.25):
+    """Estimate BigQuery cost in USD at on-demand pricing (ignores the monthly free tier)."""
+    tib = n_bytes / (1024**4)
+    return tib * price_per_tib
 
 print(f"Data scanned:    {format_bytes(bytes_processed)}")
 print(f"Estimated cost:  ${estimate_cost_usd(bytes_processed):.4f}")
