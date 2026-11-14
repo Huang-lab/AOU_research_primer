@@ -6,6 +6,9 @@ repo_name: Huang-lab/AOU_research_primer
 
 docs_dir: docs
 
+hooks:
+  - hooks/badges.py
+
 theme:
   name: material
   font:
