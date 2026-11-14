@@ -96,7 +96,7 @@ If the env vars are not set, find them manually:
 echo $GOOGLE_PROJECT
 
 # CDR — visible in workspace under CDR version
-# Format: project.dataset, e.g. "wb-silky-artichoke-2408.C2025Q4R6"
+# Format: project.dataset, e.g. "<cdr-project>.C2025Q4R6"
 echo $WORKSPACE_CDR
 
 # Bucket — list your GCS buckets and find the fc-secure- one

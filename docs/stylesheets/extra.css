@@ -200,3 +200,10 @@
     box-shadow: 0 2px 0 color-mix(in srgb, var(--badge) 30%, transparent), 0 6px 14px rgba(0, 0, 0, 0.1);
   }
 }
+
+/* Never split a table or column name mid-word inside a table; on narrow screens the table scrolls instead */
+.md-typeset table:not([class]) code {
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+}
