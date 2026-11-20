@@ -32,6 +32,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
+      # Fail on workspace-specific identifiers: Workbench project IDs (wb-word-word-1234),
+      # Terra workspace namespaces (aou-rw-xxxxxxxx) and workspace buckets (fc-secure-<uuid>).
+      # Only file:line is printed, because CI logs are public and must not echo the match.
+      - name: Block workspace identifiers
+        run: |
+          if git grep -nIE 'wb-[a-z]+-[a-z]+-[0-9]{4}|aou-rw-[a-z0-9]{8}|fc-secure-[0-9a-f]{8}-[0-9a-f]{4}' \
+               -- . ':!.github/workflows/pages.yml' | cut -d: -f1,2 | grep .; then
+            echo "::error::Workspace-specific identifier at the line(s) above. Replace it with a placeholder such as <cdr-project>."
+            exit 1
+          fi
+
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
