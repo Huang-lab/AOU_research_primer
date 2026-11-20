@@ -20,6 +20,7 @@ Audience: fluent in SQL and pandas. No language basics here.
     ---
 
     - [Choose the right compute environment](reference/environment/choose-compute-environment.md)
+    - [Find where data lives in CDR v9](reference/environment/find-where-data-lives.md)
 
 -   :material-account-group-outline:{ .lg .middle } __Build a cohort__
 
@@ -116,4 +117,4 @@ Every Reference page follows the [page template](TEMPLATE.md).
 
 ---
 
-*28 Reference pages · 4 Guides · Validated against Pan-Cancer Germline Predisposition Project cookbook (CDR v8, August 2026).*
+*29 Reference pages · 4 Guides · Validated against Pan-Cancer Germline Predisposition Project cookbook (CDR v8, August 2026).*
