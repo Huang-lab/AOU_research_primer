@@ -201,17 +201,23 @@ When carrier counts are low (e.g., < 20 carriers), standard logistic regression 
 
 ```python
 # pip install firthlogist
+# Tested with firthlogist 0.5.0, scikit-learn 1.5.2 and numpy 1.26. firthlogist 0.5.0 fails to
+# fit under scikit-learn 1.6.1, 1.7.2, 1.8.0 and 1.9.1, so keep scikit-learn below 1.6.
 from firthlogist import FirthLogisticRegression
 
+# firthlogist fits its own intercept, so drop the constant column that sm.add_constant
+# added in Step 3: keeping both makes the design matrix singular.
+X_firth = X.drop(columns="const")
+
 firth_model = FirthLogisticRegression(max_iter=200)
-firth_model.fit(X.values, y.values)
+firth_model.fit(X_firth.values, y.values)
 
-# Extract carrier_status coefficient (index 1, after intercept)
-carrier_idx = list(X.columns).index("is_carrier")
-beta_firth = firth_model.coef_[0][carrier_idx]
+# coef_ is a 1-D array aligned with the columns of X_firth (the intercept is in intercept_);
+# pvals_ has the same entries plus one trailing entry for the intercept
+carrier_idx = list(X_firth.columns).index("is_carrier")
+beta_firth = firth_model.coef_[carrier_idx]
 or_firth = np.exp(beta_firth)
-p_firth = firth_model.pvalues_[carrier_idx]
-
+p_firth = firth_model.pvals_[carrier_idx]
 print(f"Firth OR: {or_firth:.3f}, p = {p_firth:.2e}")
 ```
 
