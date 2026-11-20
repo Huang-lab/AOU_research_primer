@@ -164,14 +164,15 @@ SELECT
     g.gene_symbol,
     va.clinical_significance_string,
     CASE
-        WHEN va.clinical_significance_string LIKE '%Pathogenic%'
-             AND va.clinical_significance_string NOT LIKE '%Conflicting%'
-             THEN 'P_LP'
-        WHEN va.clinical_significance_string LIKE '%Conflicting%'
+        WHEN LOWER(va.clinical_significance_string) LIKE '%conflicting%'
+             OR (LOWER(va.clinical_significance_string) LIKE '%pathogenic%'
+                 AND LOWER(va.clinical_significance_string) LIKE '%benign%')
              THEN 'Conflicting'
-        WHEN va.clinical_significance_string LIKE '%Uncertain%'
+        WHEN LOWER(va.clinical_significance_string) LIKE '%pathogenic%'
+             THEN 'P_LP'
+        WHEN LOWER(va.clinical_significance_string) LIKE '%uncertain%'
              THEN 'VUS'
-        WHEN va.clinical_significance_string LIKE '%enign%'
+        WHEN LOWER(va.clinical_significance_string) LIKE '%benign%'
              THEN 'B_LB'
         ELSE 'Other'
     END AS significance_tier
@@ -236,6 +237,10 @@ WHERE REGEXP_CONTAINS(
 AND NOT REGEXP_CONTAINS(
     clinical_significance_string,
     r'(?i)conflicting'
+)
+AND NOT REGEXP_CONTAINS(
+    clinical_significance_string,
+    r'(?i)benign'
 )
 """
 ```
