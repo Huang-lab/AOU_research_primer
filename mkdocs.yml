@@ -6,25 +6,42 @@ repo_name: Huang-lab/AOU_research_primer
 
 docs_dir: docs
 
+hooks:
+  - hooks/badges.py
+
 theme:
   name: material
+  font:
+    text: Inter
+    code: JetBrains Mono
   palette:
-    - scheme: default
-      primary: indigo
-      accent: deep purple
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-    - scheme: slate
-      primary: indigo
-      accent: deep purple
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-4
-        name: Switch to light mode
+        name: Switch to system preference
   features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
     - navigation.sections
     - navigation.expand
     - navigation.top
+    - navigation.footer
+    - toc.follow
     - search.suggest
     - search.highlight
     - content.code.copy
@@ -33,6 +50,11 @@ theme:
 
 markdown_extensions:
   - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.details
   - pymdownx.superfences
   - pymdownx.highlight:
@@ -45,11 +67,15 @@ markdown_extensions:
 extra_css:
   - stylesheets/extra.css
 
+extra_javascript:
+  - javascripts/motion.js
+
 nav:
   - Home: index.md
   - Reference:
     - Environment:
       - Choose compute environment: reference/environment/choose-compute-environment.md
+      - Find where data lives (v9): reference/environment/find-where-data-lives.md
     - Cohort Definition:
       - Define case cohort by condition: reference/cohort-definition/define-case-cohort-by-condition.md
       - Build matched controls: reference/cohort-definition/build-matched-controls.md

@@ -30,6 +30,9 @@ between steps.
 - [Choose the right compute environment](reference/environment/choose-compute-environment.md)
   — Jupyter vs Dataproc/Hail, CDR config, Dataproc file persistence,
   sklearn alternatives.
+- [Find where data lives in CDR v9](reference/environment/find-where-data-lives.md):
+  map of every v9 BigQuery dataset and table and the genomics bucket, with
+  sizes and where each data type lives.
 
 ### Cohort Definition
 
@@ -179,5 +182,5 @@ lives on the linked Reference pages.
 
 ---
 
-*28 Reference pages · 4 Guides · Validated against Pan-Cancer Germline
+*29 Reference pages · 4 Guides · Validated against Pan-Cancer Germline
 Predisposition Project cookbook (CDR v8, August 2026).*
