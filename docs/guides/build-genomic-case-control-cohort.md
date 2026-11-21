@@ -195,8 +195,9 @@ print(f"Combined cohort: {len(cohort_df)}")
 
 **Reference:** [filter-by-observation-period](../reference/data-quality/filter-by-observation-period.md)
 
-Require minimum observation time before index date to ensure that absent records
-reflect genuine absence, not missing data.
+Require each participant to be under observation on the index date, in a period
+that began at least `min_obs_days` earlier, so that absent records before the index
+date reflect genuine absence, not missing data.
 
 `cohort_df` lives in the notebook, not in BigQuery, so the query cannot join to it.
 Pass the cohort's `person_id`s as an array parameter and compare dates in pandas.
@@ -205,7 +206,7 @@ Pass the cohort's `person_id`s as an array parameter and compare dates in pandas
 min_obs_days = 365
 
 obs_sql = f"""
-SELECT person_id, observation_period_start_date
+SELECT person_id, observation_period_start_date, observation_period_end_date
 FROM `{CDR}.observation_period`
 WHERE person_id IN UNNEST(@person_ids)
 """
@@ -216,13 +217,25 @@ obs_config = bigquery.QueryJobConfig(
 )
 obs = client.query(obs_sql, job_config=obs_config).to_dataframe()
 
-# Compare each period's start with the person's index date in pandas
+# The same period must contain the index date and start at least min_obs_days before it
 obs = obs.merge(cohort_df[["person_id", "index_date"]], on="person_id")
-lookback_days = (pd.to_datetime(obs["index_date"])
-                 - pd.to_datetime(obs["observation_period_start_date"])).dt.days
-obs_eligible = obs.loc[lookback_days >= min_obs_days, ["person_id"]].drop_duplicates()
+index_ts = pd.to_datetime(obs["index_date"])
+start_ts = pd.to_datetime(obs["observation_period_start_date"])
+end_ts = pd.to_datetime(obs["observation_period_end_date"])
+covers_index = (start_ts <= index_ts) & (index_ts <= end_ts)
+lookback_days = (index_ts - start_ts).dt.days
+obs_eligible = obs.loc[covers_index & (lookback_days >= min_obs_days), ["person_id"]].drop_duplicates()
 cohort_df = cohort_df[cohort_df["person_id"].isin(obs_eligible["person_id"])]
 ```
+
+!!! pitfall "A period that started early enough but ended before the index date"
+    Checking only that a period started `min_obs_days` before the index date keeps participants whose EHR coverage had already ended by then.
+    Controls are the most exposed: they inherit their matched case's index date in Step 5, and nothing before this step checks that they were still observed on it.
+    Require the same period to contain the index date, as above.
+
+!!! note "No follow-up requirement in this pipeline"
+    This pipeline uses only data from before the index date, so it does not require observation after it.
+    If you add outcomes measured after the index date, also require `index_date + FOLLOWUP_DAYS <= observation_period_end_date`, as in the [reference page](../reference/data-quality/filter-by-observation-period.md).
 
 !!! pitfall "Running carrier queries before the observation filter"
     Steps 8-10 scan the most expensive tables in the CDR. If Step 6 drops 10,000 participants after you already queried their variants, you paid for gigabytes of unnecessary scans. Always finalize the cohort first.
@@ -391,6 +404,11 @@ The output is ready for [case-control-to-fdr-results](./case-control-to-fdr-resu
    [query-carrier-status](../reference/genomics/query-carrier-status.md) Pitfall). The
    `how="left"` and `fillna(0)` in Step 11 are structural requirements, not
    optional cleanup.
+
+4. **Controls not observed on their inherited index date** -- Step 6 must require
+   the same observation period to contain the index date, not just to start early
+   enough. Controls take their case's index date in Step 5 and are never checked
+   against it before Step 6.
 
 ---
 
