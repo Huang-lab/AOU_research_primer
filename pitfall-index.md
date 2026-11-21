@@ -279,15 +279,21 @@ code fix, and context live.
 
 - **Dataproc clusters have NO autostop.**
   Unlike Jupyter environments, Dataproc clusters do not auto-pause or
-  auto-stop when idle. A forgotten cluster at $0.12/hr (minimum) or
-  $0.73/hr (with workers) burns credits continuously. Delete the cluster
+  auto-stop when idle. A forgotten cluster at $0.13/hr (minimum) or
+  $0.79/hr (with two workers) burns credits continuously. Delete the cluster
   manually after each session.
+  [Source](reference/cost-awareness/optimize-compute-costs.md)
+
+- **Dataproc boot disks default to 500 GB per node.**
+  Every node gets its own boot disk, and the form pre-fills 500 GB. A
+  master plus two workers is 1,500 GB, about $66/month in us-east4, billed
+  even while the cluster is stopped. Lower it to 50-100 GB per node.
   [Source](reference/cost-awareness/optimize-compute-costs.md)
 
 - **Initial credits expire on a clock, and expiry deletes your data.**
   The $300 grant expires 365 days after you sign the Data User Code of
-  Conduct, spent or not. At the recommended $0.12/hr configuration a year
-  of 4 hrs/day draws only $113, so $187 is forfeited — and on expiry
+  Conduct, spent or not. At the recommended $0.13/hr configuration a year
+  of 4 hrs/day draws only $127, so $173 is forfeited, and on expiry
   workspace buckets and persistent disks are **deleted**, not just frozen.
   Export before the date and link institutional billing ahead of it.
   [Source](reference/cost-awareness/optimize-compute-costs.md)
