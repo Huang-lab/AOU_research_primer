@@ -9,6 +9,7 @@ Validate that no feature was computed from data occurring on or after the index 
 - Python 3, `pandas`, optionally `google-cloud-bigquery`
 
 **Tier:** N/A (operates on already-extracted data)
+
 **CDR versions:** All
 
 ## Reference

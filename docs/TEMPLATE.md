@@ -5,7 +5,9 @@
 One-sentence description of what this accomplishes.
 
 **You'll need:** prerequisites (e.g. "a person_id list", "WORKSPACE_CDR set")
+
 **Tier:** Registered / Controlled
+
 **CDR versions validated:** [list]
 
 ---

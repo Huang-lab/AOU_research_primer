@@ -10,6 +10,7 @@ Determine which participants carry variants in one or more specified genes using
 - Python 3, `google-cloud-bigquery`, `pandas`
 
 **Tier:** Controlled
+
 **CDR versions:** v7+ (verify column names with `INFORMATION_SCHEMA`; see [Discover genomics table schemas](discover-genomics-tables.md))
 
 ## Reference

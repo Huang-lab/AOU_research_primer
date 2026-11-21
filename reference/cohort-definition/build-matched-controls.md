@@ -12,6 +12,7 @@ Given a set of case `person_id`s, select control participants matched on age and
 | Familiarity | OMOP CDM `person` table, `condition_occurrence`, anti-join patterns in SQL |
 
 **Tier:** Registered Tier or Controlled Tier (Controlled Tier required if using genomic data for ancestry-based matching)
+
 **CDR versions:** C2022Q4R9 and later
 
 ---

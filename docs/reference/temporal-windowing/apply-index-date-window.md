@@ -9,6 +9,7 @@ Filter clinical events to a time window relative to each participant's index dat
 - Python 3, `google-cloud-bigquery`, `pandas`
 
 **Tier:** Registered or Controlled (depending on tables accessed)
+
 **CDR versions:** v7+
 
 ## Reference

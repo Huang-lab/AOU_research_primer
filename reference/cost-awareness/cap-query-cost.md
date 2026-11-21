@@ -8,6 +8,7 @@ Set `maximum_bytes_billed` in `QueryJobConfig` to abort any query that would exc
 - A query you want to cost-protect
 
 **Tier:** Registered or Controlled (depending on tables referenced)
+
 **CDR versions:** All
 
 ## Reference

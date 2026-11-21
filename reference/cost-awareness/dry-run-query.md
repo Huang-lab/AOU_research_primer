@@ -8,6 +8,7 @@ Use BigQuery's `dry_run=True` option to estimate bytes processed before executin
 - A query string you want to cost-check
 
 **Tier:** Registered or Controlled (depending on tables referenced)
+
 **CDR versions:** All
 
 ## Reference

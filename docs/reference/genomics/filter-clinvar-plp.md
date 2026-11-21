@@ -9,6 +9,7 @@ Add a ClinVar clinical significance filter to variant queries, restricting resul
 - Python 3, `google-cloud-bigquery`, `pandas`
 
 **Tier:** Controlled
+
 **CDR versions:** v7+ (ClinVar annotations are updated with each CDR release)
 
 ## Reference

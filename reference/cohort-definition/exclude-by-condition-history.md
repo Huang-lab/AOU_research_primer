@@ -12,6 +12,7 @@ Remove participants from a study cohort who have a prior diagnosis of a specifie
 | Familiarity | OMOP CDM `condition_occurrence`, `concept_ancestor`; the distinction between Registered and Controlled Tier date handling |
 
 **Tier:** Registered Tier or Controlled Tier
+
 **CDR versions:** C2022Q4R9 and later
 
 ---
