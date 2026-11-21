@@ -2,10 +2,9 @@
 
 ## Purpose
 
-BigQuery charges by bytes scanned. Genomic queries on the All of Us CDR can scan
-hundreds of gigabytes. Before running an expensive query, you should estimate
-what it will cost and set a safety cap so that a mistake in your SQL does not
-result in an unexpectedly large bill.
+BigQuery charges by bytes scanned.
+Genomic queries on the All of Us CDR can scan anything from a few megabytes to 20 terabytes, depending on how they are written.
+Before running an expensive query, you should estimate what it will cost and set a safety cap so that a mistake in your SQL does not result in an unexpectedly large bill.
 
 This is the shortest guide in the collection -- it chains only two Reference
 pages -- but the connective reasoning between them is where the value lies.
@@ -27,7 +26,16 @@ from google.cloud import bigquery
 
 CDR = os.environ["WORKSPACE_CDR"]
 client = bigquery.Client()
+
+# v9 variant annotations live in the search index dataset (name ends in a build date)
+CDR_PROJECT, CDR_DATASET = CDR.split(".")
+IDX = CDR_PROJECT + "." + sorted(
+    d.dataset_id for d in client.list_datasets(CDR_PROJECT)
+    if d.dataset_id.startswith(f"{CDR_DATASET}_index_")
+)[-1]
 ```
+
+The examples use CDR v9 (`C2025Q4R6`) tables and the cost figures measured on them.
 
 ---
 
@@ -61,22 +69,32 @@ Write the full query exactly as you intend to execute it. Do not simplify it
 for the dry-run. Do not add `LIMIT`. Do not remove columns. The dry-run must
 evaluate the exact query you plan to execute, or the estimate will be wrong.
 
+The running example is a first draft of a carrier lookup: every participant who carries a ClinVar pathogenic or likely pathogenic variant in six cancer-predisposition genes.
+It joins three v9 tables in one statement: `T_ESA_variant_gene` (gene to variant) and `T_ENT_variant` (variant annotations) from the search index, and `cb_variant_to_person` (variant to carriers) from the CDR.
+
 ```python
 query = f"""
 SELECT
-    p.person_id,
-    v.variant_id,
-    v.gene_symbol,
-    v.consequence,
-    v.allele_frequency
-FROM `{CDR}.short_read_wgs_variants` v
-JOIN `{CDR}.person` p ON v.person_id = p.person_id
-WHERE v.gene_symbol IN ('BRCA1', 'BRCA2', 'PALB2', 'ATM', 'CHEK2')
-  AND v.consequence IN ('missense_variant', 'frameshift_variant',
-                         'stop_gained', 'splice_donor_variant',
-                         'splice_acceptor_variant')
+    g.gene,
+    e.id AS vid,
+    e.consequence,
+    e.clinvar_significance,
+    e.allele_count,
+    e.allele_number,
+    p.element AS person_id
+FROM `{IDX}.T_ESA_variant_gene` g
+JOIN `{IDX}.T_ENT_variant` e ON e.id = g.id
+JOIN `{CDR}.cb_variant_to_person` vp ON vp.vid = e.id
+CROSS JOIN UNNEST(vp.person_ids.list) AS p
+WHERE g.gene IN ('BRCA1', 'BRCA2', 'PALB2', 'ATM', 'CHEK2', 'TP53')
+  AND EXISTS (SELECT 1 FROM UNNEST(e.clinvar_significance) c
+              WHERE LOWER(c) IN ('pathogenic', 'likely pathogenic',
+                                 'pathogenic, low penetrance'))
 """
 ```
+
+The SQL is correct, and it returns the right carriers.
+Steps 2 and 3 show that it is also very expensive.
 
 ---
 
@@ -151,15 +169,23 @@ else:
     needs_optimization = True
 ```
 
-Rules of thumb for All of Us workbench queries:
+For the Step 1 query, the dry-run reports about 19,148 GB, or $116.87, far over a $10 budget.
+Almost all of it is `cb_variant_to_person`, which is read in full because the query joins to it.
 
-| Query type | Typical scan size | Notes |
+Sizes of common v9 tables, which are what a query that reads every column costs:
+
+| Table | Full-scan size in v9 | Notes |
 |---|---|---|
-| EHR table (condition, measurement) | 1-20 GB | Usually inexpensive |
-| Person/demographics | < 1 GB | Tiny table |
-| Short-read WGS variants | 50-500 GB | Depends on filters and columns |
-| Whole-genome structural variants | 10-100 GB | Smaller than short-read |
-| Survey data | < 5 GB | Small tables |
+| `person` | 0.2 GB | Demographics, always cheap |
+| `condition_occurrence` | 15.3 GB | Diagnoses |
+| `measurement` | 83.3 GB | Labs and vitals, the largest OMOP table |
+| `observation` | 47.3 GB | Includes survey answers |
+| `T_ENT_variant` (search index) | 142.5 GB | One row per variant; a join to it reads its columns in full |
+| `cb_variant_to_person` | 19,078 GB (about $116) | Clustered on `vid`: a literal list of 1,977 `vid`s read 4.5 GB |
+| VAT (`v9_vat_bigquery`) | 3,153 GB | Not clustered: a one-gene query reads 129-216 GB |
+
+GB here and throughout this guide is 1024<sup>3</sup> bytes, the unit Step 2 prints.
+Pages that quote decimal gigabytes give larger numbers for the same tables (20,484 GB for `cb_variant_to_person`).
 
 ---
 
@@ -168,77 +194,111 @@ Rules of thumb for All of Us workbench queries:
 If the estimated cost exceeds your budget, consider these optimization
 strategies, ordered from most to least effective:
 
-### 4a. Reduce columns
+### 4a. Filter clustered tables with literal values
+
+A clustered table is sorted by its clustering column, so a filter on that column can skip most of the table.
+The dry-run can count on that pruning only when the filter compares the clustering column with constant values.
+For a join, or a subquery such as `WHERE vid IN (SELECT ...)`, it estimates a read of the whole table, and a cost cap below that estimate blocks the query.
+
+`cb_variant_to_person` is clustered on `vid`.
+Split the Step 1 query in two: first find the candidate variants, then look up their carriers with the `vid`s passed as an array parameter.
+
+```python
+# Query 1: candidate variants from the search index
+candidates_sql = f"""
+SELECT
+    g.gene,
+    e.id AS vid,
+    e.consequence,
+    e.clinvar_significance,
+    e.allele_count,
+    e.allele_number
+FROM `{IDX}.T_ESA_variant_gene` g
+JOIN `{IDX}.T_ENT_variant` e ON e.id = g.id
+WHERE g.gene IN ('BRCA1', 'BRCA2', 'PALB2', 'ATM', 'CHEK2', 'TP53')
+  AND EXISTS (SELECT 1 FROM UNNEST(e.clinvar_significance) c
+              WHERE LOWER(c) IN ('pathogenic', 'likely pathogenic',
+                                 'pathogenic, low penetrance'))
+"""
+candidates = client.query(candidates_sql).to_dataframe()
+
+# Query 2: their carriers, with the vids as literal values
+carriers_sql = f"""
+SELECT vp.vid, p.element AS person_id
+FROM `{CDR}.cb_variant_to_person` vp
+CROSS JOIN UNNEST(vp.person_ids.list) AS p
+WHERE vp.vid IN UNNEST(@vids)
+"""
+carriers_config = bigquery.QueryJobConfig(query_parameters=[
+    bigquery.ArrayQueryParameter("vids", "STRING", sorted(candidates["vid"]))
+])
+carriers = client.query(carriers_sql, job_config=carriers_config).to_dataframe()
+carrier_df = carriers.merge(candidates, on="vid")
+```
+
+| Query | Dry-run estimate | Billed |
+|---|---|---|
+| Step 1 query (one join) | 19,148 GB | not run |
+| Query 1 (candidate variants) | 70.06 GB | 29.79 GB |
+| Query 2 (1,977 `vid`s as a parameter) | 4.52 GB | 4.52 GB |
+| Query 2 with `WHERE vp.vid IN (SELECT ...)` instead | 19,103 GB | not run |
+
+The two queries together cost about 34 GB (about $0.21) instead of 19,148 GB.
+Query 1 is billed less than its estimate because BigQuery prunes the join to `T_ENT_variant` (clustered on `id`) at run time, which the dry-run cannot predict.
+
+### 4b. Reduce columns
 
 BigQuery is a columnar store. Every column you `SELECT` adds to the bytes
 scanned. Remove columns you do not need.
 
-```python
-# Before: selecting all variant fields
-query_v1 = f"SELECT * FROM `{CDR}.short_read_wgs_variants` WHERE ..."
+The dry-run cannot tell which `T_ENT_variant` rows the gene filter will keep, so it estimates a full read of every `T_ENT_variant` column the query names, whatever the gene panel.
+Keep only the columns you filter on or need downstream.
 
-# After: selecting only needed columns
+```python
+# Before: Query 1 from 4a, five T_ENT_variant columns
+query_v1 = candidates_sql
+
+# After: only the variant id and the column the filter needs
 query_v2 = f"""
-SELECT person_id, variant_id, gene_symbol, consequence
-FROM `{CDR}.short_read_wgs_variants` WHERE ...
+SELECT g.gene, e.id AS vid, e.clinvar_significance
+FROM `{IDX}.T_ESA_variant_gene` g
+JOIN `{IDX}.T_ENT_variant` e ON e.id = g.id
+WHERE g.gene IN ('BRCA1', 'BRCA2', 'PALB2', 'ATM', 'CHEK2', 'TP53')
+  AND EXISTS (SELECT 1 FROM UNNEST(e.clinvar_significance) c
+              WHERE LOWER(c) IN ('pathogenic', 'likely pathogenic',
+                                 'pathogenic, low penetrance'))
 """
-# Re-run dry-run on query_v2 to see the savings
+# Re-run the dry-run on query_v2 to see the savings
 ```
 
-### 4b. Filter earlier
+In v9, `query_v1` dry-runs at 70.06 GB and `query_v2` at 25.37 GB.
 
-If you are joining tables, add filter conditions as early as possible. Push
-`WHERE` clauses into subqueries or CTEs so that BigQuery can prune partitions
-before the join.
+### 4c. Query once, reuse the result
+
+If you need several subsets of the same large table, pull the superset once and split it in pandas.
+For the same reason as in 4b, a query for one gene dry-runs at almost the same size as a query for the whole panel (25.31 GB for BRCA1 alone, 25.37 GB for six genes), and the cap you set must cover that estimate.
 
 ```python
-# Before: filter after join
-query_v1 = f"""
-SELECT v.*, p.sex_at_birth_concept_id
-FROM `{CDR}.short_read_wgs_variants` v
-JOIN `{CDR}.person` p ON v.person_id = p.person_id
-WHERE v.gene_symbol IN ('BRCA1', 'BRCA2')
-"""
+# Before: one query per gene, each estimated at a full read of the
+# T_ENT_variant columns (6 genes x 25.3 GB)
 
-# After: filter in subquery
-query_v2 = f"""
-SELECT v.person_id, v.variant_id, v.gene_symbol, p.sex_at_birth_concept_id
-FROM (
-    SELECT person_id, variant_id, gene_symbol
-    FROM `{CDR}.short_read_wgs_variants`
-    WHERE gene_symbol IN ('BRCA1', 'BRCA2')
-) v
-JOIN `{CDR}.person` p ON v.person_id = p.person_id
-"""
+# After: one query for the panel, then filter locally
+panel_df = client.query(query_v2).to_dataframe()
+brca1_df = panel_df[panel_df["gene"] == "BRCA1"]
 ```
 
-### 4c. Materialize intermediate results
+The same applies to alternative filters: pull the candidates once with the columns every filter needs, and compare filters (for example, ClinVar rules) in pandas instead of re-querying.
 
-If you will run multiple queries against the same subset of a large table,
-materialize the subset into a temporary table first. The materialization
-scans the big table once; subsequent queries scan only the smaller temp table.
-
-```python
-# Create a temp table with the subset
-materialize_sql = f"""
-CREATE OR REPLACE TEMP TABLE my_variants AS
-SELECT person_id, variant_id, gene_symbol, consequence
-FROM `{CDR}.short_read_wgs_variants`
-WHERE gene_symbol IN ('BRCA1', 'BRCA2', 'PALB2', 'ATM', 'CHEK2')
-  AND consequence IN ('missense_variant', 'frameshift_variant',
-                       'stop_gained', 'splice_donor_variant',
-                       'splice_acceptor_variant')
-"""
-# This costs one full scan, but all subsequent queries against
-# my_variants scan only the filtered subset
-client.query(materialize_sql).result()
-```
+> **Note: `CREATE TEMP TABLE` does not survive between `client.query` calls.**
+> A temporary table lasts only for the multi-statement query that creates it, so a later `client.query` call cannot read it.
+> Keep intermediate results in a DataFrame, or write them to a table in your workspace's own dataset.
 
 ### 4d. Restrict to cohort person_ids
 
-If your cohort is small relative to the full participant set, filtering the
-variant table to only your cohort's person_ids can reduce scanned data
-(depending on table partitioning).
+A `person_id` filter saves bytes only on a table clustered on `person_id`.
+No OMOP table in v9 is clustered or partitioned (`person`, `condition_occurrence`, `measurement` and `observation` included), so a cohort filter on them reads the same bytes as no filter.
+`cb_variant_to_person` has one row per variant with a list of carriers, so a cohort filter cannot reduce what it reads.
+Look up carriers for all participants, then keep your cohort in pandas (`carrier_df[carrier_df["person_id"].isin(cohort_df["person_id"])]`).
 
 After optimizing, **re-run the dry-run** (Step 2) to confirm the savings:
 
@@ -249,6 +309,9 @@ new_estimate = dry_run_job.total_bytes_processed / (1024 ** 4) * cost_per_tb
 print(f"Optimized cost estimate: ${new_estimate:.2f} "
       f"(was ${cost_estimate:.2f})")
 ```
+
+Then make the optimized query the one you run (`query = query_v2`) and continue with Steps 5-7.
+Give the carrier lookup (Query 2 in 4a) its own dry-run and cap in the same way.
 
 ---
 
@@ -330,6 +393,9 @@ Note the difference between `total_bytes_processed` (from the dry-run) and
 query cache hits (which reduce billed bytes to 0), the 10 MB minimum per query,
 or partition pruning being more effective than estimated. Keep a log of actual
 costs for your common query patterns to calibrate future budgets.
+
+Clustering is the large case in v9: Query 1 in 4a dry-runs at 70.06 GB but is billed 29.79 GB.
+Do not count on it: Query 2 in 4a, also on a clustered table, is billed exactly its 4.52 GB estimate.
 
 ---
 
