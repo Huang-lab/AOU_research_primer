@@ -32,6 +32,7 @@ Audience: fluent in SQL and pandas. No language basics here.
     - [Discover OMOP concepts](reference/cohort-definition/discover-omop-concepts.md)
     - [Extract demographic features](reference/demographics-ancestry/extract-demographic-features.md)
     - [Compute genetic ancestry PCs](reference/demographics-ancestry/compute-ancestry-pcs.md)
+    - [Link area-level SDOH measures by ZIP3](reference/demographics-ancestry/link-zip3-area-measures.md)
 
 -   :material-stethoscope:{ .lg .middle } __Clinical data__
 
@@ -117,4 +118,4 @@ Every Reference page follows the [page template](TEMPLATE.md).
 
 ---
 
-*29 Reference pages · 4 Guides · Validated against Pan-Cancer Germline Predisposition Project cookbook (CDR v8, August 2026).*
+*30 Reference pages · 4 Guides · Validated against Pan-Cancer Germline Predisposition Project cookbook (CDR v8, August 2026).*
