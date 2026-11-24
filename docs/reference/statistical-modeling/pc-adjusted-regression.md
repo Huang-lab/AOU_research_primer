@@ -217,27 +217,55 @@ print(f"P-value: {p_value:.2e}")
 
 ### Firth's penalized logistic regression for rare variants
 
-When carrier counts are low (e.g., < 20 carriers), standard logistic regression suffers from separation -- the MLE does not exist or is at infinity. Firth's penalized likelihood method adds a bias-reduction penalty:
+When carrier counts are low (e.g., < 20 carriers), standard logistic regression suffers from separation -- the MLE does not exist or is at infinity. Firth's penalized likelihood method adds a bias-reduction penalty (Firth 1993).
+The `firthlogist` package cannot be installed on the Workbench, which runs Python 3.11 (every `firthlogist` release requires Python < 3.11), so the method is written out below with numpy and scipy, which the Workbench already has.
+The p-value is the penalized likelihood ratio test, the default in R's `logistf` (Heinze & Schemper 2002):
 
 ```python
-# pip install firthlogist
-# Tested with firthlogist 0.5.0, scikit-learn 1.5.2 and numpy 1.26. firthlogist 0.5.0 fails to
-# fit under scikit-learn 1.6.1, 1.7.2, 1.8.0 and 1.9.1, so keep scikit-learn below 1.6.
-from firthlogist import FirthLogisticRegression
+import numpy as np
+from scipy import stats
 
-# firthlogist fits its own intercept, so drop the constant column that sm.add_constant
-# added in Step 3: keeping both makes the design matrix singular.
-X_firth = X.drop(columns="const")
 
-firth_model = FirthLogisticRegression(max_iter=200)
-firth_model.fit(X_firth.values, y.values)
+def firth_logit(X, y, fixed=None, max_iter=200, tol=1e-8):
+    """Firth-penalized logistic regression. X includes the constant column; `fixed` holds one coefficient at 0."""
+    X, y = np.asarray(X, float), np.asarray(y, float)
+    free = np.ones(X.shape[1], bool)
+    if fixed is not None:
+        free[fixed] = False
 
-# coef_ is a 1-D array aligned with the columns of X_firth (the intercept is in intercept_);
-# pvals_ has the same entries plus one trailing entry for the intercept
-carrier_idx = list(X_firth.columns).index("is_carrier")
-beta_firth = firth_model.coef_[carrier_idx]
-or_firth = np.exp(beta_firth)
-p_firth = firth_model.pvals_[carrier_idx]
+    def penalized_loglik(b):
+        eta = X @ b
+        p = 1 / (1 + np.exp(-eta))
+        info = X.T @ (X * (p * (1 - p))[:, None])
+        return np.sum(y * eta - np.logaddexp(0, eta)) + 0.5 * np.linalg.slogdet(info)[1]
+
+    beta = np.zeros(X.shape[1])
+    current = penalized_loglik(beta)
+    for _ in range(max_iter):
+        p = 1 / (1 + np.exp(-X @ beta))
+        w = p * (1 - p)
+        info = X.T @ (X * w[:, None])
+        hat = np.einsum("ij,jk,ik->i", X, np.linalg.inv(info), X) * w
+        score = X.T @ (y - p + hat * (0.5 - p))
+        step = np.zeros_like(beta)
+        step[free] = np.linalg.solve(info[np.ix_(free, free)], score[free])
+        for _ in range(30):  # halve the step until the penalized likelihood stops decreasing
+            candidate = penalized_loglik(beta + step)
+            if candidate >= current:
+                break
+            step /= 2
+        beta, current = beta + step, candidate
+        if np.max(np.abs(step)) < tol:
+            break
+    return beta, current
+
+
+# Fit on the Step 3 design matrix (constant included); penalized likelihood ratio test for the carrier term
+carrier_idx = list(X.columns).index("is_carrier")
+beta_firth, ll_full = firth_logit(X.values, y.values)
+_, ll_null = firth_logit(X.values, y.values, fixed=carrier_idx)
+or_firth = np.exp(beta_firth[carrier_idx])
+p_firth = stats.chi2.sf(2 * (ll_full - ll_null), df=1)
 print(f"Firth OR: {or_firth:.3f}, p = {p_firth:.2e}")
 ```
 
@@ -317,6 +345,7 @@ if p_interaction < 0.05:
 | Symptom | Cause |
 |---|---|
 | `PerfectSeparationError` or `PerfectSeparationWarning` | A covariate perfectly predicts the outcome. Usually caused by very low carrier counts. Use Firth's method (see Variation above). |
+| `ERROR: Could not find a version that satisfies the requirement firthlogist` | The Workbench runs Python 3.11 and every `firthlogist` release requires Python < 3.11. Use the numpy implementation in the Firth variation above. |
 | `LinAlgError: Singular matrix` | Perfect multicollinearity among covariates. Check for: (1) duplicate columns, (2) both race and PCs included, (3) `sex_male` in a sex-specific cancer analysis. |
 | `ConvergenceWarning: Maximum number of iterations reached` | Increase `maxiter`: `model.fit(maxiter=1000, disp=False)`. If still fails, check for separation. |
 
