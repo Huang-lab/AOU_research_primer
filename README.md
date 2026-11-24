@@ -53,6 +53,9 @@ between steps.
   — Age, sex, race/ethnicity from the person table with concept joins.
 - [Compute genetic ancestry principal components](reference/demographics-ancestry/compute-ancestry-pcs.md)
   — Access pre-computed PCs for population stratification adjustment.
+- [Link area-level SDOH measures by 3-digit ZIP](reference/demographics-ancestry/link-zip3-area-measures.md):
+  attach neighborhood poverty, income, education and deprivation measures through
+  the participant's masked ZIP3.
 
 ### Conditions & Phenotypes
 
@@ -182,5 +185,5 @@ lives on the linked Reference pages.
 
 ---
 
-*29 Reference pages · 4 Guides · Validated against Pan-Cancer Germline
+*30 Reference pages · 4 Guides · Validated against Pan-Cancer Germline
 Predisposition Project cookbook (CDR v8, August 2026).*

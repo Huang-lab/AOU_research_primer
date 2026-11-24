@@ -1,6 +1,6 @@
 # Pitfall Index
 
-Every **Pitfall** callout from the 29 Reference pages, grouped by failure
+Every **Pitfall** callout from the 30 Reference pages, grouped by failure
 mode. Use this as a pre-submission checklist: scan each category before
 running a final analysis to confirm you have not fallen into a
 silent-wrong-answer trap.
@@ -403,3 +403,15 @@ code fix, and context live.
 - **`wgs/cram/` and `microarray/idat/`, `microarray/vcf/` hold only a manifest.**
   Each folder has one CSV listing where the real files are.
   [Source](reference/environment/find-where-data-lives.md)
+
+- **`zip3_ses_map`'s `fraction_` columns are percentages.**
+  All five hold percentages: `fraction_poverty` is about 14.8 for the median
+  ZIP3, not 0.148.
+  Scaling it again, or mixing it with a 0-1 fraction, mis-scales every value.
+  [Source](reference/demographics-ancestry/link-zip3-area-measures.md)
+
+- **Joining on the integer `zip3` drops ZIP3s that start with 0.**
+  `006` is stored as `6`, which drops 69,948 participants in v9; join on the
+  text `zip3_as_string` instead.
+  Excel causes the same loss when it re-saves a ZIP3 CSV.
+  [Source](reference/demographics-ancestry/link-zip3-area-measures.md)

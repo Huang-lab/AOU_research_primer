@@ -84,6 +84,7 @@ nav:
     - Demographics & Ancestry:
       - Extract demographic features: reference/demographics-ancestry/extract-demographic-features.md
       - Compute ancestry PCs: reference/demographics-ancestry/compute-ancestry-pcs.md
+      - Link area-level SDOH by ZIP3: reference/demographics-ancestry/link-zip3-area-measures.md
     - Conditions & Phenotypes:
       - Query condition occurrence: reference/conditions-phenotypes/query-condition-occurrence.md
       - Build multi-code phenotype: reference/conditions-phenotypes/build-multi-code-phenotype.md
